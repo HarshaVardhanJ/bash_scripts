@@ -11,7 +11,7 @@ MOUNT2=$( mktemp img_burn_script.XXX ) || COMP1=$( mktemp img_burn_script&& )
 
 
 DATE="$( date "+%Y-%m-%d@%H:%M:%S" )"
-DRIVE_BACKUP="Backup("${DATE}").zip"
+DRIVE_BACKUP="Backup("${DATE}").tar"
 HOME="$( ls -d ~ )"
 
 # Function to delete all created temporary files and .img file
@@ -21,7 +21,7 @@ function finish
 	do
 		if [ -e "${FILE}" ]
 		then
-			cd $( dirname "${FILE}" ) && rm -rv ( basename "${FILE}" ) 2>&1 | tee -a "${HOME}"/log_file.txt
+			cd $( dirname "${FILE}" ) && rm -rv $( basename "${FILE}" ) 2>&1 | tee -a "${HOME}"/log_file.txt
 		fi
 	done
 }
@@ -185,11 +185,11 @@ do
 	echo "-----------------File Conversion Process-----------------" | tee -a "${HOME}"/log_file.txt
 	echo "" | tee -a "${HOME}"/log_file.txt
 
-	if [ -f "${ISO}" ]				# If ISO file exists. There is an issue here. The file path isn't being recognised. Skips straight to else condition.
+	if [ -f "${ISO}" ]
 	then
 		IMG="$( basename "${ISO}" | sed 's/.iso//g' ).img"
 		echo "File conversion(from ISO to IMG) started." | tee -a "${HOME}"/log_file.txt
-		hdiutil convert -format UDRW -o "${HOME}"/"${IMG}" "${ISO}" 2>&1 | tee -a "${HOME}"/log_file.txt # There is a problem here. Error : No such file or directory
+		hdiutil convert -format UDRW -o "${HOME}"/"${IMG}" "${ISO}" 2>&1 | tee -a "${HOME}"/log_file.txt 
 
 		if [ -e "${HOME}"/"${IMG}".dmg ]		# If the .img.dmg file exists
 		then
@@ -264,9 +264,6 @@ do
 		DRIVE="$( diff $COMP1 $COMP2 | grep -i '/dev/' | cut -d" " -f2 )"						# /dev/disk2 type
 		MOUNT_DISK="$( diff $MOUNT1 $MOUNT2 | grep -i '/dev/disk' | cut -d" " -f2 )"					# /dev/disk2s1 type
 		MOUNT_DRIVE="$( diff $MOUNT1 $MOUNT2 | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"		# /Volumes/DRIVE type
-#		DRIVE="$( diff "${HOME}"/comp_file1.txt "${HOME}"/comp_file2.txt | grep -i '/dev/' | cut -d" " -f2 )"						# /dev/disk2 type
-#		MOUNT_DISK="$( diff "${HOME}"/mount_file1.txt "${HOME}"/mount_file2.txt | grep -i '/dev/disk' | cut -d" " -f2 )"				# /dev/disk2s1 type
-#		MOUNT_DRIVE="$( diff "${HOME}"/mount_file1.txt "${HOME}"/mount_file2.txt | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"		# /Volumes/DRIVE type
 		echo ""
 
 		echo "The drive selected is '"${DRIVE}"' and is mounted at '"${MOUNT_DRIVE}"'."
@@ -297,10 +294,21 @@ do
 					echo ""
 					echo "Backing up the contents of the drive '"${DRIVE}"' to '"${HOME}"' under the filename 'backup.zip'." | tee >>"${HOME}"/log_file.txt
 					echo "Depending upon the number and size of the files, this may take a while. Please wait."
-#					tar -cvpf "${HOME}"/"${DRIVE_BACKUP}" /Volumes/DRIVE &>"${HOME}"/tar_logfile.txt
 					tar -cvpf - /Volumes/DRIVE 2>"${HOME}"/tar_logfile.txt | pv -tpreb >"${HOME}"/"${DRIVE_BACKUP}"
 
-					if [ -e "${HOME}"/"${DRIVE_BACKUP}" ]
+					read -p "Would you like to compress the backup file to save disk space on your machine? \n \
+							Compression is processor intensive and will take longer. Compress backup? (y/n) : " COMPRESS
+
+					if [ "${COMPRESS}" = y ]	# If user wants backup file to be compressed
+					then
+						tar -cvpzf - /Volumes/DRIVE 2>"${HOME}"/tar_logfile.txt | pv -tpreb >"${HOME}"/""${DRIVE_BACKUP}".gz"
+					elif [ "${COMPRESS}" = n ]	# If user doesn't want backup file to be compressed
+					then
+						tar -cvpf - /Volumes/DRIVE 2>"${HOME}"/tar_logfile.txt | pv -tpreb >"${HOME}"/"${DRIVE_BACKUP}"
+					fi
+
+
+					if [ -e "${HOME}"/""${DRIVE_BACKUP}".gz" || -e "${HOME}"/"${DRIVE_BACKUP}" ] && [ $? == 0 ]
 					then
 						echo ""
 						echo "The files have been backed up."
@@ -356,7 +364,13 @@ do
 		if [ -e "${HOME}"/"${IMG}" ]
 		then
 			echo "Starting write. This may take a while. Please wait...."
-			pv -tpreb "${HOME}"/"${IMG}" | sudo dd of="${DRIVE_DD}" bs=4m && sync | tee -a "${HOME}"/log_file.txt
+			
+			if [ $(uname) == "Darwin" ]
+			then
+				( pv -tpreb "${HOME}"/"${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) | tee -a "${HOME}"/log_file.txt # bs=4m for BSD 'dd'
+			else
+				( pv -tpreb "${HOME}"/"${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) | tee -a "${HOME}"/log_file.txt	# bs=4M for GNU 'dd'
+			fi
 
 			if [[ $? -eq 0 ]]
 			then
