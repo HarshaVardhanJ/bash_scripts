@@ -1,12 +1,16 @@
 #!/bin/bash
 
-# Creating temporary directory and file. TEMP variable's value is the path to the temporary file and not the contents of the file.
-TEMP=$( mktemp -t rpi ) || TEMP=$( mktemp rpi&& ) # 'rpi_temp&&' expands to the PID of this process i.e. 'rpi_temp3672'
+# Creating temporary directory and file. TEMP variable's value is the path to the temporary file
+TEMP=$( mktemp -p rpi.XXX ) || TEMP=$( mktemp -p rpi&& )
+COMP1=$( mktemp -p rpi.XXX ) || COMP1=$( mktemp -p rpi&& )
+COMP2=$( mktemp -p rpi.XXX ) || COMP2=$( mktemp -p rpi&& )
+MOUNT1=$( mktemp -p rpi.XXX ) || MOUNT1=$( mktemp -p rpi&& )
+MOUNT2=$( mktemp -p rpi.XXX ) || MOUNT2=$( mktemp -p rpi&& )
 
 # Function to delete the created temporary file and other files
 function finish
 {
-	for FILE in "${TEMP}" "${HOME}"/comp_file1.txt "${HOME}"/com_file2.txt "${HOME}"/mount_file1.txt "${HOME}"/mount_file2.txt "${HOME}"/RPi_files
+	for FILE in "${TEMP}" "${COMP1}" "${COMP2}" "${MOUNT1}" "${MOUNT2}" "${HOME}"/RPi_files
 	do
 		if [ -e "${FILE}" ]
 		then
@@ -118,7 +122,6 @@ esac
 if [[ "${FLAG}" -eq 1 ]]
 then
 	FILENAME=$( basename "${FILE}" )
-	##if [[ file -b "${FILE}" == "Zip archive data" ]] || [ "${FILE: -4}" == ".zip" ]
 	if [[ "${FILE}" == *.zip ]] || [ "${FILE: -4}" == ".zip" ]
 	then
 		mkdir "${HOME}"/RPi_files
@@ -127,14 +130,14 @@ then
 		if [ "$?" -eq 0 ]
 		then
 			display_message "Extracted image from "${FILE}"."
+			IMG="$( ls "${HOME}"/RPi_files/*.img )"
 			FLAG=3
 		else
 			display_message "The extraction seems to have failed."
 			FLAG=-1
 		fi
 		
-		IMG="$( ls "${HOME}"/RPi_files/*.img )"
-	elif [[ $FILE == *.img ]] || [ "${FILE: -4}" == ".img" ]
+	elif [[ "${FILE}" == *.img ]] || [ "${FILE: -4}" == ".img" ]
 	then
 		cp "${FILE}" "${HOME}"/RPi_files/
 		IMG="$( ls "${HOME}"/RPi_files/*.img )"
@@ -153,8 +156,8 @@ do
 		
 		case $RESP in
 			$OK)
-				diskutil list > "${HOME}"/comp_file1.txt
-				mount > "${HOME}"/mount_file1.txt
+				diskutil list > "${COMP1}"
+				mount > "${MOUNT1}"
 				FLAG=2
 				;;
 			$CANCEL)
@@ -206,8 +209,8 @@ do
 		case $RESPONSE in
 			$OK)
 				display_info "Recognising inserted pen-drive/SD card. Please wait." 4
-				diskutil list > "${HOME}"/comp_file2.txt
-				mount > "${HOME}"/mount_file2.txt
+				diskutil list > "${COMP2}"
+				mount > "${MOUNT2}"
 				FLAG=1
 				;;
 			$CANCEL)
@@ -253,9 +256,9 @@ do
 
 	while [ "${FLAG}" -ne 0 ] && [ "${FLAG}" -eq 1 ]
 	do
-		DRIVE="$( diff "${HOME}"/comp_file1.txt "${HOME}"/comp_file2.txt | grep -i '/dev/' | cut -d" " -f2 )"					# /dev/disk2 type
-		MOUNT_DISK="$( diff "${HOME}"/mount_file1.txt "${HOME}"/mount_file2.txt | grep -i '/dev/disk' | cut -d" " -f2 )"			# /dev/disk2s1 type
-		MOUNT_DRIVE="$( diff "${HOME}"/mount_file1.txt "${HOME}"/mount_file2.txt | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"	# /Volumes/DRIVE type
+		DRIVE="$( diff "${COMP1}" "${COMP2}" | grep -i '/dev/' | cut -d" " -f2 )"									# /dev/disk2 type
+		MOUNT_DISK="$( diff "${MOUNT1}" "${MOUNT2}" | grep -i '/dev/disk' | cut -d" " -f2 )"						# /dev/disk2s1 type
+		MOUNT_DRIVE="$( diff "${MOUNT1}" "${MOUNT2}" | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"	# /Volumes/DRIVE type
 
 		display_info "The drive selected is "${DRIVE}" and it is mounted at "${MOUNT_DRIVE}"." 3
 		display_info "The drive "${DRIVE}" mounted at "${MOUNT_DRIVE}" will be formatted to FAT32 with the name 'DRIVE'." 3
@@ -266,8 +269,6 @@ do
 			$YES)
 				display_info "Erasing and formatting disk "${DRIVE}"." 3
 				diskutil eraseDisk FAT32 DRIVE "${DRIVE}" 
-#				( diskutil eraseDisk FAT32 DRIVE - | pv -n > "${DRIVE}" ) 2>&1 | display_gauge "Erasing and formatting disk "${DRIVE}"."
-#				( pv -n "${DRIVE}" 2>&1 | diskutil eraseDisk FAT32 DRIVE - ) 2>&1 | display_gauge "Erasing and formatting disk "${DRIVE}"."
 				display_info "Disk "${DRIVE}" has been erased and formatted to FAT32 with the name 'DRIVE'." 3
 				display_info "The disk will now be unmounted." 3
 				diskutil unmountDisk "${DRIVE}"
@@ -282,9 +283,25 @@ do
 						display_info "The drive "${MOUNT_DRIVE}" will be renamed to 'DRIVE'. No loss of data will occur. This is to help make the backup." 3
 						diskutil rename "${MOUNT_DISK}" DRIVE
 						display_info "Backing up the contents of the drive "${DRIVE}" to "${HOME}" under the filename "${BACKUP_FILE}". Depending upon the size and number of files, this may take a while. Please wait." 5
-						tar -cpf - /Volumes/DRIVE | ( pv -n > "${HOME}"/"${BACKUP_FILE}" ) 2>&1 | display_gauge "Backing up contents of "${DRIVE}"."
 
-						if [[ -e "${HOME}"/"${BACKUP_FILE}" ]]
+						display_yesno "Do you wish to compress the backup of the contents of '"${DRIVE}"'? /
+						(Compression is CPU intensive and can take a while longer)"
+						RESPONSE=$?
+
+						case $RESPONSE in
+							$YES)
+								tar -cpzf - /Volumes/DRIVE | ( pv -n > "${HOME}"/""${BACKUP_FILE}".gz" ) 2>&1 | display_gauge "Backup up contents of '"${DRIVE}"'."
+								;;
+							$NO)
+								tar -cpf - /Volumes/DRIVE | ( pv -n > "${HOME}"/"${BACKUP_FILE}" ) 2>&1 | display_gauge "Backing up contents of "${DRIVE}"."
+								;;
+							$ESC)
+								display_message "Program stopped. Select <OK> to close."
+								FLAG=-1
+								;;
+						esac
+
+						if [ -e "${HOME}"/""${DRIVE_BACKUP}".gz" || -e "${HOME}"/"${DRIVE_BACKUP}" ]
 						then
 							display_info "The drive "${DRIVE}" has been backed up. Check "${HOME}" for the file "${BACKUP_FILE}"." 4
 						else
@@ -334,7 +351,12 @@ do
 		then
 			if [ $(whoami) = "root" ]
 			then
-				( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4m && sync ) 2>&1 | display_gauge "Writing image to storage."
+				if [ $(uname) == "Darwin" ]
+				then
+					( pv -nW "${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) 2>&1 | display_gauge "Writing image to storage."
+				else
+					( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) 2>&1 | display_gauge "Writing image to storage."
+				fi
 				display_message "Burning image to storage drive "${DRIVE}" completed."
 				FLAG=0
 			elif [ $(whoami) != "root" ]
@@ -344,14 +366,18 @@ do
 				sudo -k
  				dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "Authentication required" --passwordbox "[sudo] Password for user $USER : " 0 0 2>"${TEMP}" && echo -e "\n" >>"${TEMP}"
 
-				( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4m && sync ) 2>&1 | display_gauge "Writing to "${DRIVE}"." && echo "" >"${TEMP}"
+				if [ $(uname) == "Darwin" ]
+				then
+					( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) 2>&1 | display_gauge "Writing to "${DRIVE}"." && echo "" >"${TEMP}"
+				else
+					( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) 2>&1 | display_gauge "Writing to "${DRIVE}"." && echo "" >"${TEMP}"
+				fi
 				display_message "Burning image to storage drive "${DRIVE}" completed."
-
 				sudo -k
 				FLAG=0
 			fi
 		else
-			display_info "The .img file that is to be written to the disk could not be found." 5
+			display_info "The '.img' file that is to be written to the disk could not be found." 5
 			FLAG=-1
 			display_message "Program stopped. Select <OK> to close."
 		fi
