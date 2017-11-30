@@ -9,7 +9,6 @@ COMP2=$( mktemp img_burn_script.XXX ) || COMP1=$( mktemp img_burn_script&& )
 MOUNT1=$( mktemp img_burn_script.XXX ) || COMP1=$( mktemp img_burn_script&& )
 MOUNT2=$( mktemp img_burn_script.XXX ) || COMP1=$( mktemp img_burn_script&& )
 
-
 DATE="$( date "+%Y-%m-%d@%H:%M:%S" )"
 DRIVE_BACKUP="Backup("${DATE}").tar"
 HOME="$( ls -d ~ )"
@@ -231,8 +230,8 @@ do
 
 		if [ "${CONF}" = y ]
 		then
-			diskutil list > "${COMP1}" #"${HOME}"/comp_file1.txt
-			mount > "${MOUNT1}" #"${HOME}"/mount_file1.txt
+			diskutil list > "${COMP1}"
+			mount > "${MOUNT1}"
 			FLAG=2
 		else
 			echo ""
@@ -249,8 +248,8 @@ do
 		then
 			echo "Please wait. Recognising inserted drive..."
 			sleep 4
-			diskutil list > "${COMP2}" #"${HOME}"/comp_file2.txt
-			mount > "${MOUNT2}" #"${HOME}"/mount_file2.txt
+			diskutil list > "${COMP2}"
+			mount > "${MOUNT2}"
 			FLAG=1
 		else
 			echo ""
@@ -261,9 +260,9 @@ do
 
 	while [ "${FLAG}" -ne 0 ] && [ "${FLAG}" -eq 1 ]
 	do
-		DRIVE="$( diff $COMP1 $COMP2 | grep -i '/dev/' | cut -d" " -f2 )"						# /dev/disk2 type
-		MOUNT_DISK="$( diff $MOUNT1 $MOUNT2 | grep -i '/dev/disk' | cut -d" " -f2 )"					# /dev/disk2s1 type
-		MOUNT_DRIVE="$( diff $MOUNT1 $MOUNT2 | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"		# /Volumes/DRIVE type
+		DRIVE="$( diff $COMP1 $COMP2 | grep -i '/dev/' | cut -d" " -f2 )"									# /dev/disk2 type
+		MOUNT_DISK="$( diff $MOUNT1 $MOUNT2 | grep -i '/dev/disk' | cut -d" " -f2 )"						# /dev/disk2s1 type
+		MOUNT_DRIVE="$( diff $MOUNT1 $MOUNT2 | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"	# /Volumes/DRIVE type
 		echo ""
 
 		echo "The drive selected is '"${DRIVE}"' and is mounted at '"${MOUNT_DRIVE}"'."
@@ -297,7 +296,7 @@ do
 					tar -cvpf - /Volumes/DRIVE 2>"${HOME}"/tar_logfile.txt | pv -tpreb >"${HOME}"/"${DRIVE_BACKUP}"
 
 					read -p "Would you like to compress the backup file to save disk space on your machine? \n \
-							Compression is processor intensive and will take longer. Compress backup? (y/n) : " COMPRESS
+						Compression is processor intensive and will take longer. Compress backup? (y/n) : " COMPRESS
 
 					if [ "${COMPRESS}" = y ]	# If user wants backup file to be compressed
 					then
@@ -367,9 +366,9 @@ do
 			
 			if [ $(uname) == "Darwin" ]
 			then
-				( pv -tpreb "${HOME}"/"${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) | tee -a "${HOME}"/log_file.txt # bs=4m for BSD 'dd'
+				( pv -tpreb "${HOME}"/"${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) | tee -a "${HOME}"/log_file.txt	# bs=4m for BSD 'dd'
 			else
-				( pv -tpreb "${HOME}"/"${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) | tee -a "${HOME}"/log_file.txt	# bs=4M for GNU 'dd'
+				( pv -tpreb "${HOME}"/"${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) | tee -a "${HOME}"/log_file.txt		# bs=4M for GNU 'dd'
 			fi
 
 			if [[ $? -eq 0 ]]
@@ -389,7 +388,6 @@ do
 		if [ "${FLAG}" -eq 0 ]
 		then		
 			diskutil eject "${DRIVE}" >>"${HOME}"/log_file.txt 2>&1
-			rm "${COMP1}" "${COMP2}" "${MOUNT1}" "${MOUNT2}" "${HOME}"/"${IMG}"
 			echo "The USB has been ejected. The process is done."
 			FLAG=-1
 		fi
