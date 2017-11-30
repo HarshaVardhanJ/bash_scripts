@@ -293,7 +293,6 @@ do
 					echo ""
 					echo "Backing up the contents of the drive '"${DRIVE}"' to '"${HOME}"' under the filename 'backup.zip'." | tee >>"${HOME}"/log_file.txt
 					echo "Depending upon the number and size of the files, this may take a while. Please wait."
-					tar -cvpf - /Volumes/DRIVE 2>"${HOME}"/tar_logfile.txt | pv -tpreb >"${HOME}"/"${DRIVE_BACKUP}"
 
 					read -p "Would you like to compress the backup file to save disk space on your machine? \n \
 						Compression is processor intensive and will take longer. Compress backup? (y/n) : " COMPRESS
