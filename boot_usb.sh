@@ -4,10 +4,10 @@ REPEAT_SEARCH=y
 echo ""
 
 # Creating temporary files to store transient information that the script needs
-COMP1=$( mktemp img_burn_script.XXX ) || COMP1=$( mktemp img_burn_script&& )
-COMP2=$( mktemp img_burn_script.XXX ) || COMP1=$( mktemp img_burn_script&& )
-MOUNT1=$( mktemp img_burn_script.XXX ) || COMP1=$( mktemp img_burn_script&& )
-MOUNT2=$( mktemp img_burn_script.XXX ) || COMP1=$( mktemp img_burn_script&& )
+COMP1=$( mktemp -p img_burn_script.XXX ) || COMP1=$( mktemp -p img_burn_script&& )
+COMP2=$( mktemp -p img_burn_script.XXX ) || COMP1=$( mktemp -p img_burn_script&& )
+MOUNT1=$( mktemp -p img_burn_script.XXX ) || MOUNT1=$( mktemp -p img_burn_script&& )
+MOUNT2=$( mktemp -p img_burn_script.XXX ) || MOUNT2=$( mktemp -p img_burn_script&& )
 
 DATE="$( date "+%Y-%m-%d@%H:%M:%S" )"
 DRIVE_BACKUP="Backup("${DATE}").tar"
