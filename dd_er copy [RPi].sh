@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Creating temporary directory and file. TEMP variable's value is the path to the temporary file
-TEMP=$( mktemp -p rpi.XXX ) || TEMP=$( mktemp -p rpi&& )
-COMP1=$( mktemp -p rpi.XXX ) || COMP1=$( mktemp -p rpi&& )
-COMP2=$( mktemp -p rpi.XXX ) || COMP2=$( mktemp -p rpi&& )
-MOUNT1=$( mktemp -p rpi.XXX ) || MOUNT1=$( mktemp -p rpi&& )
-MOUNT2=$( mktemp -p rpi.XXX ) || MOUNT2=$( mktemp -p rpi&& )
+TEMP=$( mktemp rpi.XXX ) #|| TEMP=$( mktemp rpi&& )
+COMP1=$( mktemp rpi.XXX ) #|| COMP1=$( mktemp rpi&& )
+COMP2=$( mktemp rpi.XXX ) #|| COMP2=$( mktemp rpi&& )
+MOUNT1=$( mktemp rpi.XXX ) #|| MOUNT1=$( mktemp rpi&& )
+MOUNT2=$( mktemp rpi.XXX ) #|| MOUNT2=$( mktemp rpi&& )
 
 # Function to delete the created temporary file and other files
 function finish
@@ -18,6 +18,7 @@ function finish
 		fi
 	done
 }
+
 
 # Trapping script exit(0), SIGHUP(1), SIGINT(2), SIGQUIT(3), SIGTRAP(5), SIGTERM(15) signals to cleanup temporary files
 trap finish 0 1 2 3 5 15
@@ -67,7 +68,7 @@ function display_gauge()	# Displaying a box with a gauge to show progress
 
 while [[ "${FLAG}" -eq 3 ]]
 do
-	dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "File to be burned" --clear --inputbox "Enter term to search for .zip or .img file" 6 80 2>$TEMP 
+	dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "File to be burned" --clear --inputbox "Enter term to search for .zip or .img file" 0 0 2>"${TEMP}" 
 	RESP=$?
 
 	case $RESP in
