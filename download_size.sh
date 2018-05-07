@@ -11,16 +11,27 @@ if [ $# -ne 1 ]
 then
 	echo -e "$0 : URL not provided as argument. \n USAGE: $0 URL"
 	exit 1
+elif [ $# -eq 1 ]
+then
+	URL=$1
+	wget --spider "${URL}" 2>&1 | egrep "^Remote file exists" 1>/dev/null
+	FILE_EXISTS=$?
 fi
 
 # Variable 'URL' assigned to first argument
-URL=$1
+#URL=$1
 
-RESPONSE1="$( wget --spider --server-response "${URL}" 2>&1 | awk '/^Length/{print $3}' | tr -d '()' )"
-RESPONSE2="$( wget --spider "${URL}" 2>&1 | awk '/^Length/{print $3}' | tr -d '()' )"
-RESPONSE3="$( curl --head "${URL}" 2>&1 | egrep "^Content-Length" | cut -d" " -f2 | awk '{$1=$1/1024^2; print $1,"MB";}' )"
-
-echo "The size of the file was obtained as : "
-echo -e "\t Method-1 : ${RESPONSE1}"
-echo -e "\t Method-2 : ${RESPONSE2}"
-echo -e "\t Method-3 : ${RESPONSE3}"
+if [ "${FILE_EXISTS}" -ne 0 ]
+then
+	echo -e "\nPlease check the download link provided. Could not determine if the download file exists.\n"
+elif [ "${FILE_EXISTS}" -eq 0 ]
+then
+	echo -e "\nRemote file exists. Checking file size, please wait.\n"
+	RESPONSE1="$( wget --spider --server-response "${URL}" 2>&1 | awk '/^Length/{print $3}' | tr -d '()' )"
+	RESPONSE2="$( wget --spider "${URL}" 2>&1 | awk '/^Length/{print $3}' | tr -d '()' )"
+	RESPONSE3="$( curl --head "${URL}" 2>&1 | egrep "^Content-Length" | cut -d" " -f2 | awk '{$1=$1/1024^2; print $1,"MB";}' )"
+	echo "The size of the file was obtained as : "
+	echo -e "\tMethod-1 : ${RESPONSE1}"
+	echo -e "\tMethod-2 : ${RESPONSE2}"
+	echo -e "\tMethod-3 : ${RESPONSE3}"
+fi
