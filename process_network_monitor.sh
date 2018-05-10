@@ -23,7 +23,7 @@ then
 	echo -e "\nPlease enter a different PID or search term. Could not find any processes that match the search term or PID.\n"
 elif [ "${SEARCH_STATUS}" -eq 0 ]
 then
-	if [ $(echo "${SEARCH_RESULT}" | awk '{print $1}') == 'root' ]
+	if [ $(echo "'${SEARCH_RESULT}'" | awk '{print $1}') == 'root' ]
 	then
 		echo -e "\n\t\t\tThe process you've searched for is running as 'root'.\n \
 			You will need administrator privileges to view the network activity of that process.\n \
