@@ -106,8 +106,8 @@ RESP=$?
 
 case $RESP in
 	$OK)
-		FILE=$( echo "${SEARCH_RESULTS}" | sed -n "$(echo ""$(cat $TEMP)" p" | sed 's/ //')" )
-		RESULT="$( echo "${FILE}" )"
+		FILE=$( printf "${SEARCH_RESULTS}" | sed -n "$(printf ""$(cat $TEMP)" p" | sed 's/ //')" )
+		RESULT="$( printf "${FILE}" )"
 		display_result "File selected"
 		FLAG=1
 		;;
@@ -342,7 +342,7 @@ do
 
 	while [ "${FLAG}" -ne 2 ] && [ "${FLAG}" -eq 0 ]
 	do
-		DRIVE_DD="$( echo ""${DRIVE}"" | sed 's/disk/rdisk/g' )"
+		DRIVE_DD="$( printf ""${DRIVE}"" | sed 's/disk/rdisk/g' )"
 
 		display_info "The Linux image will now be written to the the USB drive. This will take a few minutes." 4
 		display_info "After the USB has been written to, you may or may not get a prompt saying that the USB is not recognisable. If you do, click 'Ignore'." 6
@@ -365,13 +365,13 @@ do
 				display_message "The password prompt for admin/root will be prompted at the terminal. Please enter the password on the next prompt."
 				
 				sudo -k
- 				dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "Authentication required" --passwordbox "[sudo] Password for user $USER : " 0 0 2>"${TEMP}" && echo -e "\n" >>"${TEMP}"
+ 				dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "Authentication required" --passwordbox "[sudo] Password for user $USER : " 0 0 2>"${TEMP}" && printf "\n" >>"${TEMP}"
 
 				if [ $(uname) == "Darwin" ]
 				then
-					( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) 2>&1 | display_gauge "Writing to "${DRIVE}"." && echo "" >"${TEMP}"
+					( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) 2>&1 | display_gauge "Writing to "${DRIVE}"." && printf "" >"${TEMP}"
 				else
-					( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) 2>&1 | display_gauge "Writing to "${DRIVE}"." && echo "" >"${TEMP}"
+					( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) 2>&1 | display_gauge "Writing to "${DRIVE}"." && printf "" >"${TEMP}"
 				fi
 				display_message "Burning image to storage drive "${DRIVE}" completed."
 				sudo -k

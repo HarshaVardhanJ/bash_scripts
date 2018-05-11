@@ -1,7 +1,7 @@
 #!/bin/bash
 
 REPEAT_SEARCH=y
-echo ""
+printf ""
 
 # Creating temporary files to store transient information that the script needs
 COMP1=$( mktemp img_burn_script.XXX ) #|| COMP1=$( mktemp img_burn_script&& )
@@ -31,21 +31,21 @@ trap finish 0 1 2 3 5 15
 while [ ${REPEAT_SEARCH} = y ]
 do
     read -p "Enter a name of an iso file to search for : " SEARCH
-    echo "Searching for iso files containing the term "${SEARCH}"...."
+    printf "Searching for iso files containing the term "${SEARCH}"...."
 
     SEARCH_RESULTS="$(find "${HOME}" -maxdepth 4 -type f -name "*.iso" -and -iname "*${SEARCH}*" 2>/dev/null )"
-    NUMBER=$(echo "${SEARCH_RESULTS}" | wc -l)
+    NUMBER=$(printf "${SEARCH_RESULTS}" | wc -l)
 
 	FLAG=2
 
     while [ "${FLAG}" -ne 0 ]
 	do
-		while [ "${NUMBER}" -eq 1 ] && [ "$(echo "${SEARCH_RESULTS}" | wc -c )" -gt 2 ] && [ "${FLAG}" -ne 0 ]
+		while [ "${NUMBER}" -eq 1 ] && [ "$(printf "${SEARCH_RESULTS}" | wc -c )" -gt 2 ] && [ "${FLAG}" -ne 0 ]
 		do        
-			echo ""
-			echo "The search result is :"
-			echo "${SEARCH_RESULTS}" | nl -d"\n"
-			echo ""
+			printf ""
+			printf "The search result is :"
+			printf "${SEARCH_RESULTS}" | nl -d"\n"
+			printf ""
 
 			read -p "Single iso file found containing the term '${SEARCH}'. Pick this file? (y -- yes ; n -- no) : " PICK
 			
@@ -61,8 +61,8 @@ do
 				if [ "${PICK}" = y ]
 				then
 					ISO="${SEARCH_RESULTS}"
-					echo ""
-					echo "The file that you picked is : " ${ISO}
+					printf ""
+					printf "The file that you picked is : " ${ISO}
 					FLAG=0
 					REPEAT_SEARCH=n
 				else
@@ -70,12 +70,12 @@ do
 
 					if [ "${REPEAT_SEARCH}" = y ]
 					then
-						echo ""
+						printf ""
 						FLAG=0
 					elif [ "${REPEAT_SEARCH}" = n ]
 					then
-						echo""
-						echo "Program exited."
+						printf""
+						printf "Program exited."
 						FLAG=0
 					fi
 				fi
@@ -83,7 +83,7 @@ do
 
 			while [ "${FLAG}" -eq -1 ]
 			do
-				echo ""
+				printf ""
 				read -p "Invalid choice. Enter 's' to show file again : " PICK
 
 				if [ "${PICK}" = s ]
@@ -93,12 +93,12 @@ do
 			done
 		done
 
-		while [ "${NUMBER}" -gt 1 ] && [ "$(echo "${SEARCH_RESULTS}" | wc -c)" -gt 2 ] && [ "${FLAG}" -ne 0 ]
+		while [ "${NUMBER}" -gt 1 ] && [ "$(printf "${SEARCH_RESULTS}" | wc -c)" -gt 2 ] && [ "${FLAG}" -ne 0 ]
 		do
-			echo ""
-			echo "The search results are :"
-			echo "${SEARCH_RESULTS}" | nl -d"\n"
-			echo ""
+			printf ""
+			printf "The search results are :"
+			printf "${SEARCH_RESULTS}" | nl -d"\n"
+			printf ""
 
 			read -p "Enter the number that is against the file that you want to pick : " PICK
 
@@ -111,19 +111,19 @@ do
 
 			while [ "${FLAG}" -eq 1 ]
 			do
- #				ISO="$( echo "${SEARCH_RESULTS}" | head -"${PICK}" | tail -1 )"
-				ISO="$( echo "${SEARCH_RESULTS}" | sed -n "${PICK}"p )"
-				echo ""
-				echo "The file that you have picked is : " ${ISO}
+ #				ISO="$( printf "${SEARCH_RESULTS}" | head -"${PICK}" | tail -1 )"
+				ISO="$( printf "${SEARCH_RESULTS}" | sed -n "${PICK}"p )"
+				printf ""
+				printf "The file that you have picked is : " ${ISO}
 				FLAG=0
 				REPEAT_SEARCH=n
 			done
 
 			while [ "${FLAG}" -eq -1 ]
 			do
-				echo ""
+				printf ""
 				read -p "Invalid choice. Please enter the number that is against the file listed. Enter 's' to show list of files again : " PICK
-				echo ""
+				printf ""
 
 				if [ "${PICK}" = s ]
 				then
@@ -132,9 +132,9 @@ do
 			done
 		done
 
-		while [ "${NUMBER}" -le 1 ] && [ "$(echo "${SEARCH_RESULTS}" | wc -c )" -le 2 ] && [ "${FLAG}" -ne 0 ]
+		while [ "${NUMBER}" -le 1 ] && [ "$(printf "${SEARCH_RESULTS}" | wc -c )" -le 2 ] && [ "${FLAG}" -ne 0 ]
 		do
-			echo ""
+			printf ""
 			read -p "No iso file found containing the term '${SEARCH}'. Search for a different file? (y -- yes ; n -- no) : " REPEAT_SEARCH
 			
 			if [ "${REPEAT_SEARCH}" = y ] || [ "${REPEAT_SEARCH}" = n ]
@@ -151,15 +151,15 @@ do
 					FLAG=0
 				elif [ "${REPEAT_SEARCH}" = n ]
 				then
-					echo ""
-					echo "Program exited."
+					printf ""
+					printf "Program exited."
 					FLAG=0
 				fi
 			done
 
 			while [ "${FLAG}" -eq -1 ]
 			do
-				echo ""
+				printf ""
 				read -p "Invalid choice. Please enter 's' to show the previous menu : " REPEAT_SEARCH
 
 				if [ "${REPEAT_SEARCH}" = s ]
@@ -170,48 +170,48 @@ do
 		done
 	done
 
-        echo ""
+        printf ""
 
 	##################################### ISO to IMG Conversion Part ######################################
 
-	echo "---------------------File Details-------------------" >>"${HOME}"/log_file.txt
-	echo "The file that was picked : "${ISO}"." >>"${HOME}"/log_file.txt
-	echo "The file details : " >>"${HOME}"/log_file.txt
+	printf "---------------------File Details-------------------" >>"${HOME}"/log_file.txt
+	printf "The file that was picked : "${ISO}"." >>"${HOME}"/log_file.txt
+	printf "The file details : " >>"${HOME}"/log_file.txt
 	file "${ISO}" >>"${HOME}"/log_file.txt
-	echo "----------------------------------------------------" >>"${HOME}"/log_file.txt
+	printf "----------------------------------------------------" >>"${HOME}"/log_file.txt
 
-	echo "" | tee -a "${HOME}"/log_file.txt
-	echo "-----------------File Conversion Process-----------------" | tee -a "${HOME}"/log_file.txt
-	echo "" | tee -a "${HOME}"/log_file.txt
+	printf "" | tee -a "${HOME}"/log_file.txt
+	printf "-----------------File Conversion Process-----------------" | tee -a "${HOME}"/log_file.txt
+	printf "" | tee -a "${HOME}"/log_file.txt
 
 	if [ -f "${ISO}" ]
 	then
 		IMG="$( basename "${ISO}" | sed 's/.iso//g' ).img"
-		echo "File conversion(from ISO to IMG) started." | tee -a "${HOME}"/log_file.txt
+		printf "File conversion(from ISO to IMG) started." | tee -a "${HOME}"/log_file.txt
 		hdiutil convert -format UDRW -o "${HOME}"/"${IMG}" "${ISO}" 2>&1 | tee -a "${HOME}"/log_file.txt 
 
 		if [ -e "${HOME}"/"${IMG}".dmg ]		# If the .img.dmg file exists
 		then
-			echo "File conversion completed." | tee -a "${HOME}"/log_file.txt
-			echo "" | tee -a "${HOME}"/log_file.txt
+			printf "File conversion completed." | tee -a "${HOME}"/log_file.txt
+			printf "" | tee -a "${HOME}"/log_file.txt
 			mv -v "${HOME}"/"${IMG}".dmg "${HOME}"/"${IMG}" >> "${HOME}"/log_file.txt
 		
 			if [ -e "${HOME}"/"${IMG}" ]		# If the .img file exists
 			then
-				echo "The Linux ISO has been converted to IMG format." | tee -a "${HOME}"/log_file.txt
-				echo "----------------------------------------------------" >>"${HOME}"/log_file.txt
+				printf "The Linux ISO has been converted to IMG format." | tee -a "${HOME}"/log_file.txt
+				printf "----------------------------------------------------" >>"${HOME}"/log_file.txt
 				REPEAT_SEARCH=n
 				FLAG=3
 			fi
 		else
-			echo ""
-			echo "The convert command might have failed or there is no .dmg file to convert to .img" | tee -a "${HOME}"/log_file.txt
-			echo "----------------------------------------------------" >>"${HOME}"/log_file.txt
+			printf ""
+			printf "The convert command might have failed or there is no .dmg file to convert to .img" | tee -a "${HOME}"/log_file.txt
+			printf "----------------------------------------------------" >>"${HOME}"/log_file.txt
 			REPEAT_SEARCH=n
 			FLAG=-1
 		fi
 	else
-		echo "The ISO file doesn't exist or the path provided is incorrect." | tee -a "${HOME}"/log_file.txt
+		printf "The ISO file doesn't exist or the path provided is incorrect." | tee -a "${HOME}"/log_file.txt
 		REPEAT_SEARCH=n
 		FLAG=-1
 	fi
@@ -234,9 +234,9 @@ do
 			mount > "${MOUNT1}"
 			FLAG=2
 		else
-			echo ""
-			echo "Invalid key."
-			echo ""
+			printf ""
+			printf "Invalid key."
+			printf ""
 		fi
 	done
 
@@ -246,15 +246,15 @@ do
 
 		if [ "${CONF}" = y ]
 		then
-			echo "Please wait. Recognising inserted drive..."
+			printf "Please wait. Recognising inserted drive..."
 			sleep 4
 			diskutil list > "${COMP2}"
 			mount > "${MOUNT2}"
 			FLAG=1
 		else
-			echo ""
-			echo "Invalid key."
-			echo ""
+			printf ""
+			printf "Invalid key."
+			printf ""
 		fi
 	done
 
@@ -263,19 +263,19 @@ do
 		DRIVE="$( diff $COMP1 $COMP2 | grep -i '/dev/' | cut -d" " -f2 )"									# /dev/disk2 type
 		MOUNT_DISK="$( diff $MOUNT1 $MOUNT2 | grep -i '/dev/disk' | cut -d" " -f2 )"						# /dev/disk2s1 type
 		MOUNT_DRIVE="$( diff $MOUNT1 $MOUNT2 | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"	# /Volumes/DRIVE type
-		echo ""
+		printf ""
 
-		echo "The drive selected is '"${DRIVE}"' and is mounted at '"${MOUNT_DRIVE}"'."
-		echo "The drive '"${DRIVE}"' mounted at '"${MOUNT_DRIVE}"' will be formatted to ExFAT with the name 'DRIVE'."
+		printf "The drive selected is '"${DRIVE}"' and is mounted at '"${MOUNT_DRIVE}"'."
+		printf "The drive '"${DRIVE}"' mounted at '"${MOUNT_DRIVE}"' will be formatted to ExFAT with the name 'DRIVE'."
 		read -p "Warning: The drive '"${DRIVE}"' will be erased completely. To proceed, press 'y'. To halt, press 'n' : " CONF
 
 		if [ "${CONF}" = y ]
 		then
-			echo ""
-			echo "Erasing and formatting disk '"${DRIVE}"'."
+			printf ""
+			printf "Erasing and formatting disk '"${DRIVE}"'."
 			diskutil eraseDisk ExFAT DRIVE "${DRIVE}" 2>&1 | tee -a "${HOME}"/log_file.txt
-			echo "'"${DRIVE}"' has been erased and formatted to ExFAT with the name 'DRIVE'."
-			echo "The disk will now be unmounted."
+			printf "'"${DRIVE}"' has been erased and formatted to ExFAT with the name 'DRIVE'."
+			printf "The disk will now be unmounted."
 			diskutil unmountDisk "${DRIVE}" 2>&1 | tee -a "${HOME}"/log_file.txt
 			FLAG=0
 		elif [ "${CONF}" = n ]
@@ -288,11 +288,11 @@ do
 				if [ "${STORE_CONF}" = y ]
 				then
 					
-					echo "The drive '"${MOUNT_DRIVE}"' will be renamed to 'DRIVE'. No loss of data will occur. This is to help make the backup."
+					printf "The drive '"${MOUNT_DRIVE}"' will be renamed to 'DRIVE'. No loss of data will occur. This is to help make the backup."
 					diskutil rename "${MOUNT_DISK}" DRIVE >>"${HOME}"/log_file.txt 2>&1
-					echo ""
-					echo "Backing up the contents of the drive '"${DRIVE}"' to '"${HOME}"' under the filename 'backup.zip'." | tee >>"${HOME}"/log_file.txt
-					echo "Depending upon the number and size of the files, this may take a while. Please wait."
+					printf ""
+					printf "Backing up the contents of the drive '"${DRIVE}"' to '"${HOME}"' under the filename 'backup.zip'." | tee >>"${HOME}"/log_file.txt
+					printf "Depending upon the number and size of the files, this may take a while. Please wait."
 
 					read -p "Would you like to compress the backup file to save disk space on your machine? \n \
 						Compression is processor intensive and will take longer. Compress backup? (y/n) : " COMPRESS
@@ -308,9 +308,9 @@ do
 
 					if [ -e "${HOME}"/""${DRIVE_BACKUP}".gz" || -e "${HOME}"/"${DRIVE_BACKUP}" ] && [ $? == 0 ]
 					then
-						echo ""
-						echo "The files have been backed up."
-						echo "To check the list of files that have been backed up, look at the 'tar_logfile.txt' in the home folder." | tee -a "${HOME}"/log_file.txt
+						printf ""
+						printf "The files have been backed up."
+						printf "To check the list of files that have been backed up, look at the 'tar_logfile.txt' in the home folder." | tee -a "${HOME}"/log_file.txt
 					fi
 				elif [ "${STORE_CONF}" = n ]
 				then
@@ -325,43 +325,43 @@ do
 						then
 							FLAG=3
 						else
-							echo ""
-							echo "Invalid key."
-							echo""
+							printf ""
+							printf "Invalid key."
+							printf""
 						fi
 					done
 				else
-					echo ""
-					echo "Invalid key."
-					echo ""
+					printf ""
+					printf "Invalid key."
+					printf ""
 
 				fi
 			done
 		else
-			echo ""
-			echo "Invalid Key."
-			echo""
+			printf ""
+			printf "Invalid Key."
+			printf""
 		fi
 	done
 
 	while [ "${FLAG}" -ne 2 ] && [ "${FLAG}" -eq 0 ]
 	do
-		DRIVE_DD="$(echo "${DRIVE}" | sed 's/disk/rdisk/g')"
+		DRIVE_DD="$(printf "${DRIVE}" | sed 's/disk/rdisk/g')"
 
-		echo "" ; echo ""
-		echo "The Linux file will now be written to the the USB Drive. This will take a few minutes." ; sleep 2
-		echo "After the USB has been written to, you may or may not get a prompt saying that the USB is not recognisable. If you do, click on 'Ignore'."; sleep 2
+		printf "" ; printf ""
+		printf "The Linux file will now be written to the the USB Drive. This will take a few minutes." ; sleep 2
+		printf "After the USB has been written to, you may or may not get a prompt saying that the USB is not recognisable. If you do, click on 'Ignore'."; sleep 2
 		
 		if [ $(whoami) != "root" ]
 		then
-			echo "You will be prompted for the administrator/root password for the next step." ; sleep 2
+			printf "You will be prompted for the administrator/root password for the next step." ; sleep 2
 		fi
 
-		echo ""
+		printf ""
 
 		if [ -e "${HOME}"/"${IMG}" ]
 		then
-			echo "Starting write. This may take a while. Please wait...."
+			printf "Starting write. This may take a while. Please wait...."
 			
 			if [ $(uname) == "Darwin" ]
 			then
@@ -372,22 +372,22 @@ do
 
 			if [[ $? -eq 0 ]]
 			then
-				echo "Writing to USB completed." | tee -a "${HOME}"/log_file.txt
+				printf "Writing to USB completed." | tee -a "${HOME}"/log_file.txt
 				FLAG=0
 			else
-				echo "The write process encountered some issue." | tee -a "${HOME/log_file.txt}"
-				echo "Check log-file for more information."
+				printf "The write process encountered some issue." | tee -a "${HOME/log_file.txt}"
+				printf "Check log-file for more information."
 			fi
 		else
-			echo "The .img file that is to be written to the disk could not be found."
+			printf "The .img file that is to be written to the disk could not be found."
 			FLAG=-1
-			echo "Process stopped."
+			printf "Process stopped."
 		fi
 
 		if [ "${FLAG}" -eq 0 ]
 		then		
 			diskutil eject "${DRIVE}" >>"${HOME}"/log_file.txt 2>&1
-			echo "The USB has been ejected. The process is done."
+			printf "The USB has been ejected. The process is done."
 			FLAG=-1
 		fi
 	done
