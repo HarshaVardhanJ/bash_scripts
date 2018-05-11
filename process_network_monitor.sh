@@ -31,6 +31,18 @@ then
 		printf "\nHere's the summary of that process :\n"
 		ps aux | head -1 | awk '{printf("%s \t %s \t %s \t %s \t %s \t\t %s \t %s \t %s \t %s \t %s \t\t %s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)}'
 		echo ""${SEARCH_RESULT}"" | awk '{printf("%s \t %s \t %s \t %s \t %s \t %s \t %s \t %s \t %s \t %s \t %s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)}'
+
+		printf "\n"
+		read -p "Do you wish to run the network monitor as root? (y -- yes ; n -- no) : " PROMPT
+
+		if [ "${PROMPT}" == 'y' ] || [ "${PROMPT}" == 'Y' ]
+		then
+			printf "\nDisplaying process network activity. Press 'q' to exit after viewing the activity." 
+			printf "You will have to enter the administrator password next.\n" ; sleep 2
+			sudo nettop -t external -p $(printf "${SEARCH_RESULT}" | awk '{print $2}')
+		else
+			printf "\nExiting script."
+		fi
 	else
 		printf "\nDisplaying process network activity. Press 'q' to exit after viewing the activity." ; sleep 3
 		nettop -m tcp -t wifi -p $(echo "${SEARCH_RESULT}" | awk '{print $2}')
