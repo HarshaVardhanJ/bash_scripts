@@ -3,8 +3,8 @@
 ## License		:	MIT
 ##
 ## Description	:	This script tries to display the network activity of a process that matches the search term or PID
-##					which is given as an argument. It uses 'nettop' to display the statistics. By default, only traffic
-##					on the wireless interface will be shown.
+##					which is given as an argument. It uses 'nettop' to display the statistics. By default, traffic on
+##					interfaces except loopback will be shown.
 #
 # If no argument is provided
 if [ $# -ne 1 ]
