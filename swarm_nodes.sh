@@ -12,7 +12,7 @@ ARG="$1"
 
 case "${ARG}" in
 	start)
-		ARRAY=($(docker-machine ls | grep -v "NAME" | grep -v "machine does not exist" | grep "Running" | awk '{print $1}'))
+		ARRAY=($(docker-machine ls | grep -v "NAME" | grep -v "machine does not exist" | grep "Stopped" | awk '{print $1}'))
 		printf "\nStarting nodes...\n"
 		for MACHINE in "${ARRAY[@]}"
 		do
