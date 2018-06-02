@@ -16,7 +16,7 @@ case "${ARG}" in
 		printf "\nStarting nodes...\n"
 		for MACHINE in "${ARRAY[@]}"
 		do
-			docker-machine stop "${MACHINE}"
+			docker-machine start "${MACHINE}"
 		done
 		;;
 	stop)
@@ -24,7 +24,7 @@ case "${ARG}" in
 		printf "\nStopping nodes...\n"
 		for MACHINE in "${ARRAY[@]}"
 		do
-			docker-machine start "${MACHINE}"
+			docker-machine stop "${MACHINE}"
 		done
 		;;
 	--help|-h|help|?)
