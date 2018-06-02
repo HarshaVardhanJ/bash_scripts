@@ -4,7 +4,7 @@
 #             Maintainer: Harsha Vardhan J                 #
 #                                                          #
 #    bash script for starting and stopping all machines    #
-#      		created by 'docker-machine' command.           #
+#          created by 'docker-machine' command.            #
 #                                                          #
 ############################################################
 
