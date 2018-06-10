@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Creating temporary directory and file. TEMP variable's value is the path to the temporary file
-TEMP=$( mktemp rpi.XXX ) #|| TEMP=$( mktemp rpi&& )
-COMP1=$( mktemp rpi.XXX ) #|| COMP1=$( mktemp rpi&& )
-COMP2=$( mktemp rpi.XXX ) #|| COMP2=$( mktemp rpi&& )
-MOUNT1=$( mktemp rpi.XXX ) #|| MOUNT1=$( mktemp rpi&& )
-MOUNT2=$( mktemp rpi.XXX ) #|| MOUNT2=$( mktemp rpi&& )
+TEMP=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| TEMP=$( mktemp rpi&& )
+COMP1=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| COMP1=$( mktemp rpi&& )
+COMP2=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| COMP2=$( mktemp rpi&& )
+MOUNT1=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| MOUNT1=$( mktemp rpi&& )
+MOUNT2=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| MOUNT2=$( mktemp rpi&& )
 
 # Function to delete the created temporary file and other files
 function finish
@@ -66,9 +66,10 @@ function display_gauge()	# Displaying a box with a gauge to show progress
 }
 
 
+# Obtaining search term from user to find image file
 while [[ "${FLAG}" -eq 3 ]]
 do
-	dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "File to be burned" --clear --inputbox "Enter term to search for .zip or .img file" 0 0 2>"${TEMP}" 
+	dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "File to be burned" --clear --inputbox "Enter term to search for compressed/image file" 0 0 2>"${TEMP}" 
 	RESP=$?
 
 	case $RESP in
@@ -97,13 +98,14 @@ while read -r LINE
 do
 	let i=$i+1
 	W+=($i "$LINE")
-done< <( find "${HOME}" -maxdepth 6 -type f \( -name \*.zip -iname "*${SEARCH}*" -o -name \*.img -and -iname "*${SEARCH}*" \) 2>/dev/null )
+done< <( find "${HOME}" -maxdepth 6 -type f \( \( -name \*.zip -o -name \*.bz2 -o -name \*.xz -o -name \*.gz -o -name \*.7z \) -and -iname "*${SEARCH}*" \) 2>/dev/null )
 
-SEARCH_RESULTS=$( find "${HOME}" -maxdepth 6 -type f \( -name \*.zip -iname "*${SEARCH}*" -o -name \*.img -and -iname "*${SEARCH}*" \) 2>/dev/null )
+SEARCH_RESULTS=$( find "${HOME}" -maxdepth 6 -type f \( \( -name \*.zip -o -name \*.bz2 -o -name \*.xz -o -name \*.gz -o -name \*.7z \) -and -iname "*${SEARCH}*" \) 2>/dev/null )
 
 dialog --no-collapse --clear --backtitle "Rapberry Pi Image Burner V0.1_alpha" --title "List of .zip and .img files found matching '"${SEARCH}"'" --menu "Pick the file to be burned" 0 0 0 "${W[@]}" 2>"${TEMP}"
 RESP=$?
 
+# Print the selected file(name)
 case $RESP in
 	$OK)
 		FILE=$( printf "${SEARCH_RESULTS}" | sed -n "$(printf ""$(cat $TEMP)" p" | sed 's/ //')" )
@@ -122,8 +124,8 @@ esac
 
 if [[ "${FLAG}" -eq 1 ]]
 then
-	FILENAME=$( basename "${FILE}" )
-	if [[ "${FILE}" == *.zip ]] || [ "${FILE: -4}" == ".zip" ]
+	#FILENAME=$( basename "${FILE}" )
+	if [[ "${FILE}" == *.zip ]] || [ "${FILE: -4}" == ".zip" ] # If the file picked has a '.zip' extension
 	then
 		mkdir "${HOME}"/RPi_files
 		( pv -n "${FILE}" | tar -xvf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file."
@@ -137,8 +139,63 @@ then
 			display_message "The extraction seems to have failed."
 			FLAG=-1
 		fi
-		
-	elif [[ "${FILE}" == *.img ]] || [ "${FILE: -4}" == ".img" ]
+	elif [[ "${FILE}" == *.gz ]] || [ "${FILE: -3}" == ".gz" ] # If the file picked has a '.gz' extension
+	then
+		mkdir "${HOME}"/RPi_files
+		( pv -n "${FILE}" | tar -xvzf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file."
+
+		if [ "$?" -eq 0 ]
+		then
+			display_message "Extracted image from "${FILE}"."
+			IMG="$( ls "${HOME}"/RPi_files/*.img )"
+			FLAG=3
+		else
+			display_message "The extraction seems to have failed."
+			FLAG=-1
+		fi
+	elif [[ "${FILE}" == *.bz2 ]] || [ "${FILE: -3}" == ".bz2" ] # If the file picked has a '.bz2' extension
+	then
+		mkdir "${HOME}"/RPi_files
+		( pv -n "${FILE}" | tar -xjvf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from bzip2 file."
+
+		if [ "$?" -eq 0 ]
+		then
+			display_message "Extracted image from "${FILE}"."
+			IMG="$( ls "${HOME}"/RPi_files/*.img )"
+			FLAG=3
+		else
+			display_message "The extraction seems to have failed."
+			FLAG=-1
+		fi
+	elif [[ "${FILE}" == *.xz ]] || [ "${FILE: -3}" == ".xz" ] # If the file picked has a '.xz' extension
+	then
+		mkdir "${HOME}"/RPi_files
+		( pv -n "${FILE}" | tar -xvJf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file."
+
+		if [ "$?" -eq 0 ]
+		then
+			display_message "Extracted image from "${FILE}"."
+			IMG="$( ls "${HOME}"/RPi_files/*.img )"
+			FLAG=3
+		else
+			display_message "The extraction seems to have failed."
+			FLAG=-1
+		fi
+	elif [[ "${FILE}" == *.7z ]] || [ "${FILE: -3}" == ".7z" ] # If the file picked has a '.7z' extension
+	then
+		mkdir "${HOME}"/RPi_files
+		( 7z e "${FILE}" -o"${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file."
+
+		if [ "$?" -eq 0 ]
+		then
+			display_message "Extracted image from "${FILE}"."
+			IMG="$( ls "${HOME}"/RPi_files/*.img )"
+			FLAG=3
+		else
+			display_message "The extraction seems to have failed."
+			FLAG=-1
+		fi
+	elif [[ "${FILE}" == *.img ]] || [ "${FILE: -4}" == ".img" ] # If the file picked has a '.img' extension
 	then
 		cp "${FILE}" "${HOME}"/RPi_files/
 		IMG="$( ls "${HOME}"/RPi_files/*.img )"
