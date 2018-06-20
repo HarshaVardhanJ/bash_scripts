@@ -3,7 +3,7 @@
 ## Author       :   Harsha Vardhan J
 ## License      :   MIT
 ##
-## Description  : 	This script downloads the link given by the search term and
+## Description  :   This script downloads the link given by the search term and
 ##                  check to see how many pulls have been made against that image returned by the
 ##                  search in that link.
 
@@ -27,7 +27,7 @@ trap finish 0 1 2 3 5 15
 # Checking if arguments are given
 if [ $# -ne 1 ]
 then
-	printf "$0 : URL not provided as argument. \n USAGE: $0 URL"
+	printf "\n$0 : Search term not provided as argument. \n USAGE: $0 'Search Term'\n"
 	exit 1
 elif [ $# -eq 1 ]
 then
