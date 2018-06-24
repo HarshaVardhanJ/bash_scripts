@@ -4,8 +4,9 @@
 ## License      :   MIT
 ##
 ## Description  :   This script downloads the link given by the search term and
-##                  check to see how many pulls have been made against that image returned by the
-##                  search in that link.
+##                  check to see how many pulls have been made against that
+##                  image, how many stars the image has, and the name of the 
+##                  repository returned by the search in that link.
 
 
 # Function to delete created temporary file(s)
