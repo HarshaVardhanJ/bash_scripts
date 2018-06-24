@@ -35,24 +35,30 @@ then
 	URL_DATA=$( mktemp -p "${TMPDIR}" docker_script.XXX )
 	SEARCH_RESULTS=$( mktemp -p "${TMPDIR}" docker_script.XXX )
 	FILTER_RESULTS=$( mktemp -p "${TMPDIR}" docker_script.XXX )
-#
+
 	# Variable 'SEARCH' assigned to first argument
 	SEARCH=$1
-#
+
 	# Link to webpage that is to be downloaded
 	LINK="https://hub.docker.com/search/?isAutomated=0&isOfficial=0&page=1&pullCount=0&q=$SEARCH&starCount=0"
-#
-	# Downloading webpage and storing in temporary file
-#	wget "${LINK}" -O "${URL_DATA}" 2>/dev/null
-	curl "${LINK}" -o "${URL_DATA}" 2>/dev/null
-#
 
+	# Downloading webpage using 'wget' or 'cURL' and storing in a temporary file
+	wget "${LINK}" -O "${URL_DATA}" 2>/dev/null || curl "${LINK}" -o "${URL_DATA}" 2>/dev/null
+
+	# Extracting the results information from the downloaded webpage
 	cat "${URL_DATA}" | awk -F'\"results\":' '{print $2}' | tr -d '\n' > "${SEARCH_RESULTS}"
-#
+
+	# Filtering the first five results from the search results
 	cat "${SEARCH_RESULTS}" | awk -F'},' '{print $1, "\n", $2, "\n", $3, "\n", $4, "\n", $5}' > "${FILTER_RESULTS}"
 
+	# Calculating the number of results obtained
+	TOTAL=$( cat "${FILTER_RESULTS}" | wc -l )
+
+	# Mapping the values pertaining to repo name, number of stars, and number of
+	# pulls in their corresponding arrays
+
 #	cat "${FILTER_RESULTS}" | awk -F',' '{print $1}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/repo_name:\(.*\)/\1/' > "${REPO_NAMES}"
-	mapfile -t REPOS < <( cat "${FILTER_RESULTS}" | awk -F',' '{print $1}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/repo_name:\(.*\)/\1/' )
+	mapfile -t REPOS < <( cat "${FILTER_RESULTS}" | awk -F',' '{print $1}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/repo_name:\(.*\)/\1/' | sed 's|\\u002F|/|p' )
 
 #	cat "${FILTER_RESULTS}" | awk -F',' '{print $3}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/star_count:\([0-9].*\)/\1/' > "${STAR_COUNT}"
 	mapfile -t STAR < <( cat "${FILTER_RESULTS}" | awk -F',' '{print $3}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/star_count:\([0-9].*\)/\1/' )
@@ -60,30 +66,17 @@ then
 #	cat "${FILTER_RESULTS}" | awk -F',' '{print $4}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/pull_count:\([0-9].*\)/\1/' > "${PULL_COUNT}"
 	mapfile -t PULL < <( cat "${FILTER_RESULTS}" | awk -F',' '{print $4}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/pull_count:\([0-9].*\)/\1/' )
 	
-	HEADER="\n %-45s %10s %15s\n"
-	DIVIDER=" ------------------------------------------------------------------------"
-	FORMAT=" %-45s %10s %15s\n"
-	WIDTH=45
+	# Formatting output of script
+	HEADER="\n %-40s %10s %15s\n"
+	DIVIDER=" -------------------------------------------------------------------"
+	FORMAT=" %-40s %10s %15s\n"
 	printf "$HEADER" "REPO" "STARS" "PULLS"
 	printf "$DIVIDER\n"
 
-	for VALUES in {0..5..1}; do
-		printf "$FORMAT" "${REPOS[$VALUES-1]}" "${STAR[$VALUES-1]}" "${PULL[$VALUES-1]}"
+	# Printing the results stored in each array, element by element.
+	for (( VALUES=1 ; VALUES<=TOTAL ; VALUES++ )); do
+		printf "$FORMAT" "${REPOS[${VALUES}-1]}" "${STAR[${VALUES}-1]}" "${PULL[${VALUES}-1]}"
 	done
-#	printf "$FORMAT" "${REPOS[0]}" "${STAR[0]}" "${PULL[0]}"
-#	printf "$FORMAT" "${REPOS[1]}" "${STAR[1]}" "${PULL[1]}"
-#	printf "$FORMAT" "${REPOS[2]}" "${STAR[2]}" "${PULL[2]}"
-#	printf "$FORMAT" "${REPOS[3]}" "${STAR[3]}" "${PULL[3]}"
-#	printf "$FORMAT" "${REPOS[4]}" "${STAR[4]}" "${PULL[4]}"
-
-
-#	cat "${FILTER_RESULTS}"
-	# Filtering required information i.e. "pull_count" from the downloaded webpage
-	#PULLS="$(cat "${TEMP_FILE}" | awk '/\,\"pull_count\":[0-9]*.\,/' | awk -F',"pull_count":' '{print $2}' | awk -F',' '{print $1}')"
-#
-	# Displaying number of pulls
-	#printf "\nNumber of pulls = "${PULLS}"\n"
 fi
-
 
 ######################################### End of script ###########################################
