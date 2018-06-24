@@ -43,7 +43,8 @@ then
 	LINK="https://hub.docker.com/search/?isAutomated=0&isOfficial=0&page=1&pullCount=0&q=$SEARCH&starCount=0"
 #
 	# Downloading webpage and storing in temporary file
-	wget "${LINK}" -O "${URL_DATA}" 2>/dev/null
+#	wget "${LINK}" -O "${URL_DATA}" 2>/dev/null
+	curl "${LINK}" -o "${URL_DATA}" 2>/dev/null
 #
 
 	cat "${URL_DATA}" | awk -F'\"results\":' '{print $2}' | tr -d '\n' > "${SEARCH_RESULTS}"
@@ -59,13 +60,21 @@ then
 #	cat "${FILTER_RESULTS}" | awk -F',' '{print $4}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/pull_count:\([0-9].*\)/\1/' > "${PULL_COUNT}"
 	mapfile -t PULL < <( cat "${FILTER_RESULTS}" | awk -F',' '{print $4}' | tr -d '[' | tr -d '{' | tr -d '"' | tr -d ' ' | sed 's/pull_count:\([0-9].*\)/\1/' )
 	
-	awk 'BEGIN {print "REPO","\t\t\t", "STARS", "\t\t", "PULLS" }'
+	HEADER="\n %-45s %10s %15s\n"
+	DIVIDER=" ------------------------------------------------------------------------"
+	FORMAT=" %-45s %10s %15s\n"
+	WIDTH=45
+	printf "$HEADER" "REPO" "STARS" "PULLS"
+	printf "$DIVIDER\n"
 
-	printf "${REPOS[0]} \t\t\t ${STAR[0]} \t\t ${PULL[0]}\n"
-	printf "${REPOS[1]} \t ${STAR[1]} \t\t ${PULL[1]}\n"
-	printf "${REPOS[2]} \t ${STAR[2]} \t\t ${PULL[2]}\n"
-	printf "${REPOS[3]} \t ${STAR[3]} \t\t ${PULL[3]}\n"
-	printf "${REPOS[4]} \t ${STAR[4]} \t\t ${PULL[4]}\n"
+	for VALUES in {0..5..1}; do
+		printf "$FORMAT" "${REPOS[$VALUES-1]}" "${STAR[$VALUES-1]}" "${PULL[$VALUES-1]}"
+	done
+#	printf "$FORMAT" "${REPOS[0]}" "${STAR[0]}" "${PULL[0]}"
+#	printf "$FORMAT" "${REPOS[1]}" "${STAR[1]}" "${PULL[1]}"
+#	printf "$FORMAT" "${REPOS[2]}" "${STAR[2]}" "${PULL[2]}"
+#	printf "$FORMAT" "${REPOS[3]}" "${STAR[3]}" "${PULL[3]}"
+#	printf "$FORMAT" "${REPOS[4]}" "${STAR[4]}" "${PULL[4]}"
 
 
 #	cat "${FILTER_RESULTS}"
