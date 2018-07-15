@@ -10,17 +10,18 @@
 # Function to delete created temporary file(s)
 function finish
 {
-    for FILE in "${TEMP_FILE}"
+    for FILE in ${TEMP_FILE}
     do
         if [ -e "${TEMP_FILE}" ]
         then
-            cd $( dirname "${TEMP_FILE}" ) && rm -f $( basename "${FILE}" )
+            cd "$( dirname "${TEMP_FILE}" )" && rm -f "$( basename "${FILE}" )"
         fi
     done
 }
 
 # Trapping script exit(0), SIGHUP(1), SIGINT(2), SIGQUIT(3), SIGTRAP(5), SIGTERM(15) signals to cleanup temporary files
-trap finish 0 1 2 3 5 15
+#trap finish 0 1 2 3 5 15
+trap finish EXIT SIGHUP SIGINT SIGQUIT SIGTRAP SIGTERM
 
 # Creating temporary file to store downloaded webpage
 TEMP_FILE=$( mktemp -p "${TMPDIR}" wget.XXX )
@@ -32,7 +33,8 @@ LINK="https://hub.docker.com/search/?isAutomated=0&isOfficial=0&page=1&pullCount
 wget "${LINK}" -O "${TEMP_FILE}" 2>/dev/null
 
 # Filtering required information i.e. "pull_count" from the downloaded webpage
-PULLS="$(cat "${TEMP_FILE}" | awk '/\,\"pull_count\":[0-9]*.\,/' | awk -F',"pull_count":' '{print $2}' | awk -F',' '{print $1}')"
+#PULLS="$(cat "${TEMP_FILE}" | awk '/\,\"pull_count\":[0-9]*.\,/' | awk -F',"pull_count":' '{print $2}' | awk -F',' '{print $1}')"
+PULLS="$( awk '/\,\"pull_count\":[0-9]*.\,/' < "${TEMP_FILE}" | awk -F',"pull_count":' '{print $2}' | awk -F',' '{print $1}')"
 
 # Displaying number of pulls
 printf "\nNumber of pulls = "${PULLS}"\n"
