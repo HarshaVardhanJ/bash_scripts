@@ -67,9 +67,10 @@ function display_gauge()    # Displaying a box with a gauge to show progress
 }
 
 
+# Flag value at this point = 0
 # First while loop. Flag codes : [+/-]1[1-10][0,1]
 # Obtaining search term from user to find image file
-while [[ "${FLAG}" -ge 0 ]]
+while [[ "${FLAG}" -ge 0  && "${FLAG}" -ne 110 ]]
 do
     dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "File to be written to SD Card" --clear \
         --inputbox "Enter term to search for compressed/image file" 0 0 2>"${TEMP}" 
@@ -118,9 +119,10 @@ then
     ############################################################ Print the selected file(name)
     case $RESP in
         $OK)
-            FILE=$( printf '%s' "${SEARCH_RESULTS}" | sed -n "$(printf '%s' "\"$(cat "${TEMP}")\" p" | sed 's/ //')" )
-            RESULT="$( printf '%s' "${FILE}" )"
-            display_result "File selected"
+            FILE=$( printf "${SEARCH_RESULTS}" | sed -n "$(printf ""$(cat "${TEMP}")" p" | sed 's/ //')" )
+            RESULT="$( printf "${FILE}" )"
+            display_result "File selected:\
+            	"${RESULT}""
             FLAG=210
             ;;
         $CANCEL)
@@ -134,16 +136,16 @@ then
     esac
 fi
 
+# FLag value at this point = 210 (if successful)
 # Third if-statement. Flag codes : [+/-]3[1-10][0,1]
 ############################################################ Extraction of '.img' file
 if [[ "${FLAG}" -eq 210 ]]
 then
     #FILENAME=$( basename "${FILE}" )
-    if [[ "${FILE}" == *.zip ]] || [ "${FILE: -4}" == ".zip" ] # If the file picked has a '.zip' extension
+    if [[ "${FILE}" == *.zip || "${FILE: -4}" == ".zip" ]] # If the file picked has a '.zip' extension
     then
         mkdir "${HOME}"/RPi_files
-        ( pv -n "${FILE}" | tar -xvf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." \
-        	&& true
+        ( pv -n "${FILE}" | tar -xvf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." && true
 
         if true
         then
@@ -154,11 +156,24 @@ then
             display_message "The extraction seems to have failed."
             FLAG=311
         fi
-    elif [[ "${FILE}" == *.gz ]] || [ "${FILE: -3}" == ".gz" ] # If the file picked has a '.gz' extension
+    elif [[ "${FILE}" == *.gz || "${FILE: -3}" == ".gz" ]] # If the file picked has a '.gz' extension
     then
         mkdir "${HOME}"/RPi_files
-        ( pv -n "${FILE}" | tar -xvzf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." \
-        	&& true
+        ( pv -n "${FILE}" | tar -xvzf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." && true
+
+        if true
+        then
+            display_message "Extracted image from \"${FILE}\"."
+            IMG="$( ls "${HOME}"/RPi_files/*.img )"
+           FLAG=310
+        else
+            display_message "The extraction seems to have failed."
+            FLAG=311
+        fi
+    elif [[ "${FILE}" == *.bz2 || "${FILE: -3}" == ".bz2" ]] # If the file picked has a '.bz2' extension
+    then
+        mkdir "${HOME}"/RPi_files
+        ( pv -n "${FILE}" | tar -xjvf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from bzip2 file." && true
 
         if true
         then
@@ -169,11 +184,10 @@ then
             display_message "The extraction seems to have failed."
             FLAG=311
         fi
-    elif [[ "${FILE}" == *.bz2 ]] || [ "${FILE: -3}" == ".bz2" ] # If the file picked has a '.bz2' extension
+    elif [[ "${FILE}" == *.xz || "${FILE: -3}" == ".xz" ]] # If the file picked has a '.xz' extension
     then
         mkdir "${HOME}"/RPi_files
-        ( pv -n "${FILE}" | tar -xjvf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from bzip2 file." \
-        	&& true
+        ( pv -n "${FILE}" | tar -xvJf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." && true
 
         if true
         then
@@ -184,11 +198,10 @@ then
             display_message "The extraction seems to have failed."
             FLAG=311
         fi
-    elif [[ "${FILE}" == *.xz ]] || [ "${FILE: -3}" == ".xz" ] # If the file picked has a '.xz' extension
+    elif [[ "${FILE}" == *.7z || "${FILE: -3}" == ".7z" ]] # If the file picked has a '.7z' extension
     then
         mkdir "${HOME}"/RPi_files
-        ( pv -n "${FILE}" | tar -xvJf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." \
-        	&& true
+        ( 7z e "${FILE}" -o"${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." && true
 
         if true
         then
@@ -199,22 +212,7 @@ then
             display_message "The extraction seems to have failed."
             FLAG=311
         fi
-    elif [[ "${FILE}" == *.7z ]] || [ "${FILE: -3}" == ".7z" ] # If the file picked has a '.7z' extension
-    then
-        mkdir "${HOME}"/RPi_files
-        ( 7z e "${FILE}" -o"${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." \
-        	&& true
-
-        if true
-        then
-            display_message "Extracted image from \"${FILE}\"."
-            IMG="$( ls "${HOME}"/RPi_files/*.img )"
-            FLAG=310
-        else
-            display_message "The extraction seems to have failed."
-            FLAG=311
-        fi
-    elif [[ "${FILE}" == *.img ]] || [ "${FILE: -4}" == ".img" ] # If the file picked has a '.img' extension
+    elif [[ "${FILE}" == *.img || "${FILE: -4}" == ".img" ]] # If the file picked has a '.img' extension
     then
         cp "${FILE}" "${HOME}"/RPi_files/
         IMG="$( ls "${HOME}"/RPi_files/*.img )"
@@ -727,11 +725,22 @@ then
 
                     case $RESPONSE in
                         $YES)
+                        	SSH_FILE=""${DRIVE}"/ssh"
                             display_info "Creating file named 'ssh' on \"${DRIVE}\"." 2
-                            cd "${DRIVE}" && touch ./ssh && cd "${HOME}" || return
-                            display_info "File created on \"${DRIVE}\"." 2
-                            FLAG=490
-                            ;;
+                            cd "${DRIVE}" && touch ssh && cd "${HOME}" || return
+                            
+							# Checking if 'ssh' file was created
+                            if [[ -f "${SSH_FILE}" ]]
+                            then
+								display_info "File created on \"${DRIVE}\"." 2
+								FLAG=490
+							else
+								display_info "File could not be created." 2
+								FLAG=-491
+							fi
+
+							;;
+
                         $NO)
                             display_message "Program stopped. Select <OK> to close."
                             FLAG=-491
@@ -761,13 +770,14 @@ then
                             case $RESP in
                                 $OK)
                                     SSID="$( <"${TEMP}" )"
+                                    WIFI_FILE=""${DRIVE}"/wpa_supplicant.conf"
                                     dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "WiFi Connection Configuration" --clear \
                                         --inputbox "Enter password of WiFi network" 0 0 2>"${TEMP}"
                                     RESP=$?
 
                                     case $RESP in
                                         $OK)
-                                            cat <<-EOF >"${DRIVE}"/wpa_supplicant.conf
+                                            cat <<-EOF >"${WIFI_FILE}"
 											ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 											update_config=1
 
@@ -777,7 +787,17 @@ then
 												psk='"$( cat "${TEMP}" )"'
 											}
 											EOF
-                                            FLAG=490
+
+											# Checking if 'wpa_supplicant.conf' file exists and is of non-zero size
+											if [[ -s "${WIFI_FILE}" ]]
+											then
+												display_info "WiFi connection configured" 2
+												FLAG=490
+											else
+												display_info "WiFi connection could not be configured" 2
+												FLAG=-491
+											fi
+
                                             ;;
                                         $CANCEL)
                                             display_yesno "Cancel WiFi connection configuration?"
