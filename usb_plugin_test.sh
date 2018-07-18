@@ -18,6 +18,7 @@ function usb_check () {
 
 	while true
 	do
+		# If USB Device has been plugged in
 		if [[ "$( system_profiler SPUSBDataType )" =~ "BSD Name" ]]
 		then
 			USB="$( system_profiler SPUSBDataType | grep "BSD Name" | cut -d":" -f2 | tr -d ' ' )"
