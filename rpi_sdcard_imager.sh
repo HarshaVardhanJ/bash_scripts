@@ -29,7 +29,7 @@ IFS=$'\n\t'         # Setting the internal field separator to newline and tab.
 cd "${HOME}" || exit
 
 DATE="$( date "+%Y-%m-%d@%H:%M:%S" )"
-BACKUP_FILE="Backup(\"${DATE}\").zip"
+BACKUP_FILE='Backup('"${DATE}"').zip'
 
 # Variables to store results of default keystrokes
 OK=0
@@ -112,7 +112,7 @@ then
     SEARCH_RESULTS=$( find "${HOME}" -maxdepth 6 -type f \( \( -name \*.zip -o -name \*.bz2 -o -name \*.xz -o -name \*.gz -o -name \*.7z \) \
         -and -iname "*${SEARCH}*" \) 2>/dev/null )
 
-    dialog --no-collapse --clear --backtitle "Rapberry Pi Image Burner V0.1_alpha" --title "List of .zip and .img files found matching \"${SEARCH}\"" \
+    dialog --no-collapse --clear --backtitle 'Rapberry Pi Image Burner V0.1_alpha" --title "List of .zip and .img files found matching '"${SEARCH}"'' \
         --menu "Pick the file to be burned" 0 0 0 "${W[@]}" 2>"${TEMP}"
     RESP=$?
 
@@ -121,8 +121,8 @@ then
         $OK)
             FILE=$( printf "${SEARCH_RESULTS}" | sed -n "$(printf ""$(cat "${TEMP}")" p" | sed 's/ //')" )
             RESULT="$( printf "${FILE}" )"
-            display_result "File selected:\
-            	"${RESULT}""
+            display_result 'File selected: \
+            	'"${RESULT}"''
             FLAG=210
             ;;
         $CANCEL)
@@ -149,7 +149,7 @@ then
 
         if true
         then
-            display_message "Extracted image from \"${FILE}\"."
+            display_message 'Extracted image from '"${FILE}"'.'
             IMG="$( ls "${HOME}"/RPi_files/*.img )"
             FLAG=310
         else
@@ -163,7 +163,7 @@ then
 
         if true
         then
-            display_message "Extracted image from \"${FILE}\"."
+            display_message 'Extracted image from '"${FILE}"'.'
             IMG="$( ls "${HOME}"/RPi_files/*.img )"
            FLAG=310
         else
@@ -177,7 +177,7 @@ then
 
         if true
         then
-            display_message "Extracted image from \"${FILE}\"."
+            display_message 'Extracted image from '"${FILE}"'.'
             IMG="$( ls "${HOME}"/RPi_files/*.img )"
             FLAG=310
         else
@@ -191,7 +191,7 @@ then
 
         if true
         then
-            display_message "Extracted image from \"${FILE}\"."
+            display_message 'Extracted image from '"${FILE}"'.'
             IMG="$( ls "${HOME}"/RPi_files/*.img )"
             FLAG=310
         else
@@ -205,7 +205,7 @@ then
 
         if true
         then
-            display_message "Extracted image from \"${FILE}\"."
+            display_message 'Extracted image from '"${FILE}"'.'
             IMG="$( ls "${HOME}"/RPi_files/*.img )"
             FLAG=310
         else
@@ -367,16 +367,16 @@ do
             MOUNT_DISK="$( diff "${MOUNT1}" "${MOUNT2}" | grep -i '/dev/disk' | cut -d" " -f2 )"                        # /dev/disk2s1 type
             MOUNT_DRIVE="$( diff "${MOUNT1}" "${MOUNT2}" | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"    # /Volumes/DRIVE type
 
-            display_info "The drive selected is \"${DRIVE}\" and it is mounted at \"${MOUNT_DRIVE}\"." 3
-            display_info "The drive \"${DRIVE}\" mounted at \"${MOUNT_DRIVE}\" will be formatted to FAT32 with the name 'DRIVE'." 3
-            display_yesno "WARNING! The drive \"${DRIVE}\" will be erased completely. To proceed, select <YES>. To halt, select <NO>."
+            display_info 'The drive selected is '"${DRIVE}"' and it is mounted at '"${MOUNT_DRIVE}"'.' 3
+            display_info 'The drive '"${DRIVE}"' mounted at '"${MOUNT_DRIVE}"' will be formatted to FAT32 with the name 'DRIVE'.' 3
+            display_yesno 'WARNING! The drive '"${DRIVE}"' will be erased completely. To proceed, select <YES>. To halt, select <NO>.'
             RESPONSE=$?
 
             case $RESPONSE in
                 $YES)
-                    display_info "Erasing and formatting disk \"${DRIVE}\"." 3
+                    display_info 'Erasing and formatting disk '"${DRIVE}"'.' 3
                     diskutil eraseDisk FAT32 DRIVE "${DRIVE}" 
-                    display_info "Disk \"${DRIVE}\" has been erased and formatted to FAT32 with the name 'DRIVE'." 3
+                    display_info 'Disk '"${DRIVE}"' has been erased and formatted to FAT32 with the name "DRIVE".' 3
                     display_info "The disk will now be unmounted." 3
                     diskutil unmountDisk "${DRIVE}"
                     FLAG=440
@@ -387,21 +387,21 @@ do
 
                     case $RESPONSE in
                         $YES)
-                            display_info "The drive \"${MOUNT_DRIVE}\" will be renamed to 'DRIVE'. No loss of data will occur. This is to help make the backup." 4
+                            display_info 'The drive '"${MOUNT_DRIVE}"' will be renamed to "DRIVE". No loss of data will occur. This is to help make the backup.' 4
                             diskutil rename "${MOUNT_DISK}" DRIVE
-                            display_info "Backing up the contents of the drive \"${DRIVE}\" to \"${HOME}\" under the filename \"${BACKUP_FILE}\". \
-                                Depending upon the size and number of files, this may take a while. Please wait." 5
+                            display_info 'Backing up the contents of the drive '"${DRIVE}"' to '"${HOME}"' under the filename '"${BACKUP_FILE}"'. \
+                                Depending upon the size and number of files, this may take a while. Please wait.' 5
 
-                            display_yesno "Do you wish to compress the backup of the contents of \"${DRIVE}\"? /
-                            (Compression is CPU intensive and can take a while longer)"
+                            display_yesno 'Do you wish to compress the backup of the contents of '"${DRIVE}"'? /
+                            (Compression is CPU intensive and can take a while longer)'
                             RESPONSE=$?
 
                             case $RESPONSE in
                                 $YES)
-                                    tar -cpzf - /Volumes/DRIVE | ( pv -n > "${HOME}""/""\"${BACKUP_FILE}\".gz" ) 2>&1 | display_gauge "Backup up contents of \"${DRIVE}\"."
+                                    tar -cpzf - /Volumes/DRIVE | ( pv -n > "${HOME}""/""\"${BACKUP_FILE}\".gz" ) 2>&1 | display_gauge 'Backup up contents of '"${DRIVE}"'.'
                                     ;;
                                 $NO)
-                                    tar -cpf - /Volumes/DRIVE | ( pv -n > "${HOME}"/"${BACKUP_FILE}" ) 2>&1 | display_gauge "Backing up contents of \"${DRIVE}\"."
+                                    tar -cpf - /Volumes/DRIVE | ( pv -n > "${HOME}"/"${BACKUP_FILE}" ) 2>&1 | display_gauge 'Backing up contents of '"${DRIVE}"'.'
                                     ;;
                                 $ESC)
                                     display_message "Program stopped. Select <OK> to close."
@@ -411,13 +411,13 @@ do
 
                             if [[ -e "${HOME}""/""\"${DRIVE_BACKUP}\".gz" || -e "${HOME}"/"${DRIVE_BACKUP}" ]]
                             then
-                                display_info "The drive \"${DRIVE}\" has been backed up. Check \"${HOME}\" for the file \"${BACKUP_FILE}\"." 4
+                                display_info 'The drive '"${DRIVE}"' has been backed up. Check '"${HOME}"' for the file '"${BACKUP_FILE}"'.' 4
                             else
-                                display_info "The drive \"${DRIVE}\" could not be backed up." 3
+                                display_info 'The drive '"${DRIVE}"' could not be backed up.' 3
                             fi
                             ;;
                         $NO)
-                            display_yesno "The drive \"${DRIVE}\" will not be backed up. Do you wish to re-select a storage drive to burn the image to?"
+                            display_yesno 'The drive '"${DRIVE}"' will not be backed up. Do you wish to re-select a storage drive to burn the image to?'
                             RESPONSE=$?
 
                             case $RESPONSE in
@@ -474,7 +474,7 @@ do
                         ( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) 2>&1 | display_gauge "Writing image to storage."
                     fi
 
-                    display_message "Burning image to storage drive \"${DRIVE}\" completed."
+                    display_message 'Burning image to storage drive '"${DRIVE}"' completed.'
                     FLAG=450
                 elif [[ $(whoami) != "root" ]]
                 then
@@ -489,15 +489,15 @@ do
 #                        ( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) 2>&1 | \
 #                            display_gauge "Writing to \"${DRIVE}\"." && printf "" >"${TEMP}"
 						( ( sudo -S sudo su ) < "${TEMP}" ) && ( pv -nW "${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) 2>&1 | \
-                            display_gauge "Writing to \"${DRIVE}\"." && printf "" >"${TEMP}"
+                            display_gauge 'Writing to '"${DRIVE}"'.' && printf "" >"${TEMP}"
                     else
 #                        ( cat "${TEMP}" | sudo -S sudo su ) && ( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) 2>&1 | \
 #                            display_gauge "Writing to \"${DRIVE}\"." && printf "" >"${TEMP}"
 						( ( sudo -S sudo su ) < "${TEMP}" ) && ( pv -nW "${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) 2>&1 | \
-                            display_gauge "Writing to \"${DRIVE}\"." && printf "" >"${TEMP}"
+                            display_gauge 'Writing to '"${DRIVE}"'.' && printf "" >"${TEMP}"
                     fi
                     
-                    display_message "Burning image to storage drive \"${DRIVE}\" completed."
+                    display_message 'Burning image to storage drive '"${DRIVE}"' completed.'
                     sudo -k
                     FLAG=450
                 fi
@@ -510,7 +510,7 @@ do
             if [ "${FLAG}" -eq 450 ]
             then        
                 diskutil eject "${DRIVE}"
-                display_message "The storage drive \"${DRIVE}\" has been ejected. The process is done. Select <OK> to close."
+                display_message 'The storage drive '"${DRIVE}"' has been ejected. The process is done. Select <OK> to close.'
                 FLAG=-450
             fi
         done
@@ -710,7 +710,7 @@ then
             MOUNT_DISK="$( diff "${MOUNT1}" "${MOUNT2}" | grep -i '/dev/disk' | cut -d" " -f2 )"                        # /dev/disk2s1 type
             MOUNT_DRIVE="$( diff "${MOUNT1}" "${MOUNT2}" | grep -i '/dev/disk' | cut -d" " -f4 | sed 's/\ /\\\ /g')"    # /Volumes/DRIVE type
 
-            display_info "The drive selected is \"${DRIVE}\" and it is mounted at \"${MOUNT_DRIVE}\"." 3
+            display_info 'The drive selected is '"${DRIVE}"' and it is mounted at '"${MOUNT_DRIVE}"'.' 3
 
 
             # If 'SSH and WiFi' or 'SSH only' or 'WiFi only' configuration was picked
@@ -725,14 +725,14 @@ then
 
                     case $RESPONSE in
                         $YES)
-                            display_info "Creating file named 'ssh' on \"${DRIVE}\"." 2
+                            display_info 'Creating file named "ssh" on '"${DRIVE}"'.' 2
                             touch "${DRIVE}"/ssh
 							SSH_FILE="$( ls "${DRIVE}"/ssh )"
                             
 							# Checking if 'ssh' file was created
                             if [[ -f "${SSH_FILE}" ]]
                             then
-								display_info "File created on \"${DRIVE}\"." 2
+								display_info 'File created on '"${DRIVE}"'.' 2
 								FLAG=490
 							else
 								display_info "File could not be created." 2
