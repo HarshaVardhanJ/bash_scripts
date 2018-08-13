@@ -8,6 +8,7 @@ COMP1=$( mktemp -p "${TMPDIR}" img_burn_script.XXX ) #|| COMP1=$( mktemp img_bur
 COMP2=$( mktemp -p "${TMPDIR}" img_burn_script.XXX ) #|| COMP1=$( mktemp img_burn_script&& )
 MOUNT1=$( mktemp -p "${TMPDIR}" img_burn_script.XXX ) #|| MOUNT1=$( mktemp img_burn_script&& )
 MOUNT2=$( mktemp -p "${TMPDIR}" img_burn_script.XXX ) #|| MOUNT2=$( mktemp img_burn_script&& )
+IMG_DIR="$( dirname "${COMP1}" )"
 
 DATE="$( date "+%Y-%m-%d@%H:%M:%S" )"
 DRIVE_BACKUP="Backup("${DATE}").tar"
@@ -16,11 +17,11 @@ HOME="$( ls -d ~ )"
 # Function to delete all created temporary files and .img file
 function finish
 {
-	for FILE in "${MOUNT1}" "${MOUNT2}" "${COMP1}" "${COMP2}" "${HOME}"/"${IMG}"
+	for FILE in "${MOUNT1}" "${MOUNT2}" "${COMP1}" "${COMP2}" "${IMG_DIR}"/"${IMG}"
 	do
 		if [ -e "${FILE}" ]
 		then
-			cd $( dirname "${FILE}" ) && rm -rv $( basename "${FILE}" ) 2>&1 | tee -a "${HOME}"/log_file.txt
+			cd $( dirname "${FILE}" ) && rm -v $( basename "${FILE}" ) 2>&1 | tee -a "${HOME}"/log_file.txt
 		fi
 	done
 }
@@ -188,15 +189,15 @@ do
 	then
 		IMG="$( basename "${ISO}" | sed 's/.iso//g' ).img"
 		printf "File conversion(from ISO to IMG) started." | tee -a "${HOME}"/log_file.txt
-		hdiutil convert -format UDRW -o "${HOME}"/"${IMG}" "${ISO}" 2>&1 | tee -a "${HOME}"/log_file.txt 
+		hdiutil convert -format UDRW -o "${IMG_DIR}"/"${IMG}" "${ISO}" 2>&1 | tee -a "${HOME}"/log_file.txt 
 
-		if [ -e "${HOME}"/"${IMG}".dmg ]		# If the .img.dmg file exists
+		if [ -e "${IMG_DIR}"/"${IMG}".dmg ]		# If the .img.dmg file exists
 		then
 			printf "File conversion completed." | tee -a "${HOME}"/log_file.txt
 			printf "" | tee -a "${HOME}"/log_file.txt
-			mv -v "${HOME}"/"${IMG}".dmg "${HOME}"/"${IMG}" >> "${HOME}"/log_file.txt
+			mv -v "${IMG_DIR}"/"${IMG}".dmg "${IMG_DIR}"/"${IMG}" >> "${HOME}"/log_file.txt
 		
-			if [ -e "${HOME}"/"${IMG}" ]		# If the .img file exists
+			if [ -e "${IMG_DIR}"/"${IMG}" ]		# If the .img file exists
 			then
 				printf "The Linux ISO has been converted to IMG format." | tee -a "${HOME}"/log_file.txt
 				printf "----------------------------------------------------" >>"${HOME}"/log_file.txt
@@ -359,15 +360,15 @@ do
 
 		printf ""
 
-		if [ -e "${HOME}"/"${IMG}" ]
+		if [ -e "${IMG_DIR}"/"${IMG}" ]
 		then
 			printf "Starting write. This may take a while. Please wait...."
 			
 			if [ $(uname) == "Darwin" ]
 			then
-				( pv -tpreb "${HOME}"/"${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) | tee -a "${HOME}"/log_file.txt	# bs=4m for BSD 'dd'
+				( pv -tpreb "${IMG_DIR}"/"${IMG}" | sudo /bin/dd of="${DRIVE_DD}" bs=4m && sync ) | tee -a "${HOME}"/log_file.txt	# bs=4m for BSD 'dd'
 			else
-				( pv -tpreb "${HOME}"/"${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) | tee -a "${HOME}"/log_file.txt		# bs=4M for GNU 'dd'
+				( pv -tpreb "${IMG_DIR}"/"${IMG}" | sudo dd of="${DRIVE_DD}" bs=4M && sync ) | tee -a "${HOME}"/log_file.txt		# bs=4M for GNU 'dd'
 			fi
 
 			if [[ $? -eq 0 ]]

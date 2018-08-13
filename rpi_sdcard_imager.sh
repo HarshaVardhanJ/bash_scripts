@@ -6,15 +6,16 @@ COMP1=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| COMP1=$( mktemp rpi&& )
 COMP2=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| COMP2=$( mktemp rpi&& )
 MOUNT1=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| MOUNT1=$( mktemp rpi&& )
 MOUNT2=$( mktemp -p "${TMPDIR}" rpi.XXX ) #|| MOUNT2=$( mktemp rpi&& )
+IMG_DIR="$( dirname "${TEMP}" )"
 
 # Function to delete the created temporary file and other files
 function finish
 {
-    for FILE in "${TEMP}" "${COMP1}" "${COMP2}" "${MOUNT1}" "${MOUNT2}" "${HOME}"/RPi_files
+    for FILE in "${TEMP}" "${COMP1}" "${COMP2}" "${MOUNT1}" "${MOUNT2}" "${IMG}"
     do
         if [ -e "${FILE}" ]
         then
-            cd "$( dirname "${FILE}" )" && rm -rv "$( basename "${FILE}" )"
+            cd "$( dirname "${FILE}" )" && rm -v "$( basename "${FILE}" )"
         fi
     done
 }
@@ -144,13 +145,12 @@ then
     #FILENAME=$( basename "${FILE}" )
     if [[ "${FILE}" == *.zip || "${FILE: -4}" == ".zip" ]] # If the file picked has a '.zip' extension
     then
-        mkdir "${HOME}"/RPi_files
-        ( pv -n "${FILE}" | tar -xvf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." && true
+        ( pv -n "${FILE}" | tar -xvf - -C "${IMG_DIR}" ) 2>&1 | display_gauge "Extracting image from zip file." && true
 
         if true
         then
             display_message 'Extracted image from '"${FILE}"'.'
-            IMG="$( ls "${HOME}"/RPi_files/*.img )"
+            IMG="$( ls "${IMG_DIR}"/*.img )"
             FLAG=310
         else
             display_message "The extraction seems to have failed."
@@ -158,13 +158,12 @@ then
         fi
     elif [[ "${FILE}" == *.gz || "${FILE: -3}" == ".gz" ]] # If the file picked has a '.gz' extension
     then
-        mkdir "${HOME}"/RPi_files
-        ( pv -n "${FILE}" | tar -xvzf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." && true
+        ( pv -n "${FILE}" | tar -xvzf - -C "${IMG_DIR}" ) 2>&1 | display_gauge "Extracting image from zip file." && true
 
         if true
         then
             display_message 'Extracted image from '"${FILE}"'.'
-            IMG="$( ls "${HOME}"/RPi_files/*.img )"
+            IMG="$( ls "${IMG_DIR}"/*.img )"
            FLAG=310
         else
             display_message "The extraction seems to have failed."
@@ -172,13 +171,12 @@ then
         fi
     elif [[ "${FILE}" == *.bz2 || "${FILE: -3}" == ".bz2" ]] # If the file picked has a '.bz2' extension
     then
-        mkdir "${HOME}"/RPi_files
-        ( pv -n "${FILE}" | tar -xjvf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from bzip2 file." && true
+        ( pv -n "${FILE}" | tar -xjvf - -C "${IMG_DIR}" ) 2>&1 | display_gauge "Extracting image from bzip2 file." && true
 
         if true
         then
             display_message 'Extracted image from '"${FILE}"'.'
-            IMG="$( ls "${HOME}"/RPi_files/*.img )"
+            IMG="$( ls "${IMG_DIR}"/*.img )"
             FLAG=310
         else
             display_message "The extraction seems to have failed."
@@ -186,13 +184,12 @@ then
         fi
     elif [[ "${FILE}" == *.xz || "${FILE: -3}" == ".xz" ]] # If the file picked has a '.xz' extension
     then
-        mkdir "${HOME}"/RPi_files
-        ( pv -n "${FILE}" | tar -xvJf - -C "${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." && true
+        ( pv -n "${FILE}" | tar -xvJf - -C "${IMG_DIR}" ) 2>&1 | display_gauge "Extracting image from zip file." && true
 
         if true
         then
             display_message 'Extracted image from '"${FILE}"'.'
-            IMG="$( ls "${HOME}"/RPi_files/*.img )"
+            IMG="$( ls "${IMG_DIR}"/*.img )"
             FLAG=310
         else
             display_message "The extraction seems to have failed."
@@ -200,13 +197,12 @@ then
         fi
     elif [[ "${FILE}" == *.7z || "${FILE: -3}" == ".7z" ]] # If the file picked has a '.7z' extension
     then
-        mkdir "${HOME}"/RPi_files
-        ( 7z e "${FILE}" -o"${HOME}"/RPi_files ) 2>&1 | display_gauge "Extracting image from zip file." && true
+        ( 7z e "${FILE}" -o"${IMG_DIR}" ) 2>&1 | display_gauge "Extracting image from zip file." && true
 
         if true
         then
             display_message 'Extracted image from '"${FILE}"'.'
-            IMG="$( ls "${HOME}"/RPi_files/*.img )"
+            IMG="$( ls "${IMG_DIR}"/*.img )"
             FLAG=310
         else
             display_message "The extraction seems to have failed."
@@ -214,8 +210,8 @@ then
         fi
     elif [[ "${FILE}" == *.img || "${FILE: -4}" == ".img" ]] # If the file picked has a '.img' extension
     then
-        cp "${FILE}" "${HOME}"/RPi_files/
-        IMG="$( ls "${HOME}"/RPi_files/*.img )"
+        cp "${FILE}" "${IMG_DIR}"/
+        IMG="$( ls "${IMG_DIR}"/*.img )"
 #       IMG_NAME="$( basename "${IMG}" )"
         FLAG=310
     fi
