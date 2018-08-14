@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #: Title		:	loading_indicator.sh
 #: Date			:	14-Aug-2018
@@ -8,14 +8,27 @@
 #					to simulate loading.
 #: Options		:	None
 
-# Array containing characters that show loading progression
-LOAD=('-' '\' '|' '/')
 
-while true
-do
-	for i in "${LOAD[@]}"
+function loading() {
+	# Array containing characters that show loading progression
+	LOAD=("-" "\\" "|" "/")
+
+	# If the number of arguments passed is one and equal to a number
+	if [[ $# -eq 1 && $1 =~ ^[0-9]+([.][0-9][0-9]) ]]
+	then
+		WAIT="${1}"
+	else
+		WAIT="0.3"
+	fi
+
+	while true
 	do
-		printf "\b%s" "${i}"
-		sleep 0.3
+		for i in "${LOAD[@]}"
+		do
+			printf "\\b%s" "${i}"
+			sleep "${WAIT}"
+		done
 	done
-done
+}
+
+loading "${1}"

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #: Title		:	usb_plugin_check.sh
 #: Date			:	14-Aug-2018
@@ -14,7 +14,7 @@
 function usb_check () {
 
 	# If the number of arguments passed is one and equal to a number
-	if [[ $# -eq 1 && $# =~ ^[0-9]+([.][0-9][0-9]) ]]
+	if [[ $# -eq 1 && $1 =~ ^[0-9]+([.][0-9][0-9]) ]]
 	then
 		TIME=$1
 	else
