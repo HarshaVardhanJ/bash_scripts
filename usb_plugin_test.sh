@@ -14,7 +14,8 @@
 function usb_check () {
 
 	# If the number of arguments passed is one and equal to a number
-	if [[ $# -eq 1 && $1 =~ ^[0-9]+([.][0-9][0-9]) ]]
+	# and matches either an integer or a decimal value
+	if [[ $# -eq 1 && $1 =~ ^[0-9]+([.]?[0-9]?[0-9]?) ]]
 	then
 		TIME=$1
 	else

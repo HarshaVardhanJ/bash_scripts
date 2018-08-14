@@ -14,7 +14,8 @@ function loading() {
 	LOAD=("-" "\\" "|" "/")
 
 	# If the number of arguments passed is one and equal to a number
-	if [[ $# -eq 1 && $1 =~ ^[0-9]+([.][0-9][0-9]) ]]
+	# and matches with an integer or a decimal value
+	if [[ $# -eq 1 && $1 =~ ^[0-9]+([.]?[0-9]?[0-9]?) ]]
 	then
 		WAIT="${1}"
 	else
