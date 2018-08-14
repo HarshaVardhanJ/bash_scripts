@@ -1,10 +1,15 @@
 #!/bin/bash
 #
-# Script of a function that checks if any USB device has been inserted.
-# Pass the number of seconds in between polling for USB device checks as
-# an argument to the function, as shown in the script below.
-# Numbers with up to two decimal places can be provided. '0.03' is a valid
-# value but '0.001' is not.
+#: Title		:	usb_plugin_check.sh
+#: Date			:	14-Aug-2018
+#: Author		:	"Harsha Vardhan J" <vardhanharshaj@gmail.com
+#: Version		:	1.0 (Stable)
+#: Description	:	Script of a function that checks if any USB device has been inserted. 
+#					Pass the number of seconds in between polling for USB device checks as
+# 					an argument to the function, as shown in the script below.
+# 					Numbers with up to two decimal places can be provided. '0.03' is a valid
+# 					value but '0.001' is not.
+#: Options		:	Not mandatory. Can provide a value for polling frequency as an argument.
 
 function usb_check () {
 
