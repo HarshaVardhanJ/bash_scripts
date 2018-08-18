@@ -23,8 +23,8 @@ function loading() {
 			while [[ $(ps a | awk '{print $1}' | grep "${PROC_ID}") ]]	# While background process is running
 			do
 				local LOADING_FORMAT="  \\b\\b\\b\\b\\b\\b\\b[%s]  "	# Format for printing loading indicator
-				# Loop for printing loading indicator
-				for i in "${LOAD[@]}"
+				
+				for i in "${LOAD[@]}"		# Loop for printing loading indicator
 				do
 					printf "${LOADING_FORMAT}" "${i}"
 					sleep "${WAIT}"
@@ -38,18 +38,6 @@ function loading() {
 		printf "\n%s\n%s\n" "Too many or too few arguments provided" "This function takes the previous process's PID as an argument"
 		printf "\t%s\n" "Usage: $0 \$!"
 	fi
-
-#	while [[ $(ps a | awk '{print $1}' | grep "${PROC_ID}") ]]	# While background process is running
-#	do
-#		local LOADING_FORMAT="  \\b\\b\\b\\b\\b\\b\\b[%s]  "	# Format for printing loading indicator
-#		# Print loading indicator
-#		for i in "${LOAD[@]}"
-#		do
-#			printf "${LOADING_FORMAT}" "${i}"
-#			sleep "${WAIT}"
-#		done
-#	done
-#	printf "\b\b\n"
 }
 
 loading "${@}"
