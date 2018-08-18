@@ -30,7 +30,7 @@ function loading() {
 					sleep "${WAIT}"
 				done
 			done
-			printf "\\b\\b\\b\n"
+			printf "\\b\\b\\b\\b\\b\n"
 		else
 			printf "Process ID not given as argument"
 		fi
