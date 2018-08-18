@@ -18,7 +18,10 @@
 #					printed out.
 ################
 
-# Function that provides list of USB devices attached to machine
+# Function that provides list of removable USB devices attached to machine
+# Output:	
+#			disk3	16GB
+#			disk4	256GB
 function usb_devices_list() {
 	system_profiler SPUSBDataType \
 		| awk '
@@ -26,30 +29,31 @@ function usb_devices_list() {
 	        /Removable Media:/{r=$3}
 			/BSD Name:/{n=$3}
 			/USB Interface:/{printf("%-10s\t%s\t%s\n", n, c, r)}
-			'
-}
-
-# Function that filters the list of USB devices to those that are
-# removable only
-function usb_devices_filtered() {
-	usb_devices_list \
+			' \
 		| awk -F '\t' '
-			{ if ($3=="Yes"){printf("%s ", $1)} }
+			{ if ($3=="Yes"){printf("%-10s\t%s\n", $1, $2)} }
 			'
 }
 
-# Print information about removable drives attached to the machine
+# Pretty print information about removable drives attached to the machine
+# Output:
+#			Drive	Capacity
+#			----------------
+#			disk3		16GB
+#			disk4		256GB
 function drive_info_print() {
 	# Print header
-	printf "%-10s\t%s\n" "Capacity" "Drive"
-	# Print drive name and size
-	usb_devices_list | awk '{printf("%10-s\t%s\n"), $1, $2}'
+	printf "%s\n" "------Drive List-------"
+	printf "%-10s\t%s\n" "Drive" "Capacity"
+	printf "%s\n" "------------------------"
+	usb_devices_list
+	printf "%s\n" "------------------------"
 	printf "\n"
 }
 
-drive_info_print
-
 # Function that prompts user to pick a drive
+# Function input	:	Not needed. Optional.
+# Function output	:	Device name ("/dev/diskn")
 function drive_selector() {
 	# If argument is given, assign it to 'PS3' variable.
 	# Else, use 'PS3' variable defined in the loop.
@@ -57,19 +61,63 @@ function drive_selector() {
 	then
 		PS3=${1}
 	else
-		PS3="Pick a drive. Refer the above list before picking. Enter a number  :  "
+		PS3="Pick a drive. Refer to the above list before picking. Enter a number  :  "
 	fi
 
-	# Adding drive list to array
-	ARRAY=($(usb_devices_filtered))
-
-	# Select loop
-	select OPTION in "${ARRAY[@]}"
+	while true
 	do
-		printf "%s%s" "/dev/" "${OPTION}"
-		break
+		# Adding drive list to array
+		ARRAY=($(usb_devices_list | awk '{print $1}' | tr '\n' ' '))
+
+		# If array is empty, exit
+		if [[ $(echo "${#ARRAY[@]}") == "" || $(echo ${#ARRAY[@]}) -eq 0 ]]
+		then
+			printf "\n%s\n" "No removable devices found. Please insert one. Waiting..."
+			sleep 0.5
+			break
+		else
+			drive_info_print				# Displays capacity and device name of storage media
+			select OPTION in "${ARRAY[@]}" 	# Select loop
+			do
+				break
+			done
+
+			# Check if replies match any of the following options
+			case "${REPLY}" in
+				${#ARRAY[@]})
+					printf "\n%s%s\n" "/dev/" "${OPTION}"
+					break
+					;;
+				R|r)
+					printf "\n%s\n" "Refreshing device list."
+					continue
+					;;
+				C|c)
+					printf "\n%s\n" "Cancelling device selection."
+					break
+					;;
+				H|h)
+					# Print selector help text. Create function for that.
+					printf "\n%s\n" "Printing help text."
+					continue
+					;;
+				*)
+					printf "\n%s\n%s\n" "Incorrect selection. Enter the number beside the device name." "Enter 'h' to print help text"
+					continue
+					;;
+			esac
+		fi
 	done
 }
 
-PICK=$(drive_selector "Pick a drive : ")
-echo "${PICK}"
+while true
+do
+	drive_selector
+	if [[ "${OPTION}" =~ disk[0-9] || "${REPLY}" =~ [cC] ]]
+	then
+		break 2
+	else
+		sleep 0.5
+		continue
+	fi
+done
