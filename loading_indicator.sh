@@ -7,13 +7,24 @@
 #: Description	:	Displays characters declared in an array with a delay
 #					to simulate loading until the backgroud process's PID,
 #					which is given as an argument to the function, terminates.
+#					There is also a function that just displays the loading indicator.
 #: Options		:	Requires first argument as a PID(background process, preferably).
+#					Else, the loading indicator can be displayed without providing any
+#					arguments.
 
+function loading_indicator() {
+	local LOAD=("-" "\\" "|" "/")	# Array containing characters that show loading progression
+	local WAIT="0.3"				# Refresh time between loading animation
+	local LOADING_FORMAT="  \\b\\b\\b\\b\\b\\b\\b[%s]  "	# Format for printing loading indicator
 
-function loading() {
-	LOAD=("-" "\\" "|" "/")	# Array containing characters that show loading progression
-	WAIT="0.3"				# Refresh time between loading animation
+	for i in "${LOAD[@]}"		# Loop for printing loading indicator
+	do
+		printf "${LOADING_FORMAT}" "${i}"
+		sleep "${WAIT}"
+	done
+}
 
+function loading_process() {
 	if [[ $# -eq 1 ]]	# If number of arguments is equal to one
 	then
 		if [[ $1 =~ ^[0-9]+ ]]	# If the first argument is an integer
@@ -22,13 +33,7 @@ function loading() {
 
 			while [[ $(ps a | awk '{print $1}' | grep "${PROC_ID}") ]]	# While background process is running
 			do
-				local LOADING_FORMAT="  \\b\\b\\b\\b\\b\\b\\b[%s]  "	# Format for printing loading indicator
-				
-				for i in "${LOAD[@]}"		# Loop for printing loading indicator
-				do
-					printf "${LOADING_FORMAT}" "${i}"
-					sleep "${WAIT}"
-				done
+				loading_indicator
 			done
 			printf "\\b\\b\\b\\b\\b\n"
 		else
@@ -40,4 +45,5 @@ function loading() {
 	fi
 }
 
-loading "${@}"
+#loading_indicator
+#loading_process "${@}"

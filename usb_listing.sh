@@ -18,6 +18,13 @@
 #					printed out.
 ################
 
+# Source the 'loading_indicator' script. This script provides two functions.
+# The first function takes a PID as an argument and displays the loading indicator
+# till the process exits/completes.
+# The second function just displays the loading indicator and requires no
+# arguments.
+source ~/GitRepos/bash_scripts/loading_indicator.sh
+
 # Function that provides list of removable USB devices attached to machine
 # Output:	
 #			disk3	16GB
@@ -43,12 +50,17 @@ function usb_devices_list() {
 #			disk4		256GB
 function drive_info_print() {
 	# Print header
-	printf "%s\n" "------Drive List-------"
+	printf "\n\n%s\n" "------Drive List-------"
 	printf "%-10s\t%s\n" "Drive" "Capacity"
 	printf "%s\n" "------------------------"
 	usb_devices_list
 	printf "%s\n" "------------------------"
 	printf "\n"
+}
+
+# Populate the ARRAY variable
+function drive_array() {
+	ARRAY=($(usb_devices_list | awk '{print $1}' | tr '\n' ' '))
 }
 
 # Function that prompts user to pick a drive
@@ -64,18 +76,20 @@ function drive_selector() {
 		PS3="Pick a drive. Refer to the above list before picking. Enter a number  :  "
 	fi
 
+	printf "\n%s" "Looking for drives. If not inserted, please do so now      "
+
 	while true
 	do
 		# Adding drive list to array
-		ARRAY=($(usb_devices_list | awk '{print $1}' | tr '\n' ' '))
+		drive_array
 
-		# If array is empty, exit
-		if [[ $(echo "${#ARRAY[@]}") == "" || $(echo ${#ARRAY[@]}) -eq 0 ]]
+		# If array is empty
+		if [[ ${#ARRAY[@]} -eq 0 ]]
 		then
-			printf "\n%s\n" "No removable devices found. Please insert one. Waiting..."
-			sleep 0.5
-			break
-		else
+			loading_indicator
+		# If ARRAY variable has been populated
+		elif [[ ${#ARRAY[@]} -gt 0 ]]
+		then
 			drive_info_print				# Displays capacity and device name of storage media
 			select OPTION in "${ARRAY[@]}" 	# Select loop
 			do
@@ -116,8 +130,8 @@ do
 	if [[ "${OPTION}" =~ disk[0-9] || "${REPLY}" =~ [cC] ]]
 	then
 		break 2
-	else
-		sleep 0.5
-		continue
+#	else
+#		sleep 0.5
+#		continue
 	fi
 done
