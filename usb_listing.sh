@@ -25,6 +25,15 @@
 # arguments.
 source ~/GitRepos/bash_scripts/loading_indicator.sh
 
+# Source the 'colourise_output.sh' script. This script provides a function that accepts
+# two arguments, The first argument is the colour that the text is to be printed in, and
+# the second argument is the text that is to be printed, which should be within double quotes.
+# Example:		
+#			colourise red "Text to be printed should be within double quotes"
+#			colourise blue "Text to be printed should be within double quotes"
+#			colourise green "Text to be printed should be within double quotes"
+source ~/GitRepos/bash_scripts/colourise_output.sh
+
 # Function that provides list of removable USB devices attached to machine
 # Output:	
 #			disk3	16GB
@@ -99,14 +108,17 @@ function drive_selector() {
 			# Check if replies match any of the following options
 			case "${REPLY}" in
 				${#ARRAY[@]})
+					colourise green "Drive Picked"
 					printf "\n%s%s\n" "/dev/" "${OPTION}"
 					break
 					;;
 				R|r)
+					colourise cyan "Refresh"
 					printf "\n%s\n" "Refreshing device list."
 					continue
 					;;
 				C|c)
+					colourise red "Cancel"
 					printf "\n%s\n" "Cancelling device selection."
 					break
 					;;
