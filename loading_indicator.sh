@@ -13,9 +13,9 @@
 #					arguments.
 
 function loading_indicator() {
-	local LOAD=("-" "\\" "|" "/")	# Array containing characters that show loading progression
-	local WAIT="0.3"				# Refresh time between loading animation
-	local LOADING_FORMAT="  \\b\\b\\b\\b\\b\\b\\b[%s]  "	# Format for printing loading indicator
+	local -r LOAD=("-" "\\" "|" "/")	# Array containing characters that show loading progression
+	local -r WAIT="0.3"				# Refresh time between loading animation
+	local -r LOADING_FORMAT="  \\b\\b\\b\\b\\b\\b\\b[%s]  "	# Format for printing loading indicator
 
 	for i in "${LOAD[@]}"		# Loop for printing loading indicator
 	do
@@ -40,10 +40,9 @@ function loading_process() {
 			printf "Process ID not given as argument"
 		fi
 	else
-		printf "\n%s\n%s\n" "Too many or too few arguments provided" "This function takes the previous process's PID as an argument"
-		printf "\t%s\n" "Usage: $0 \$!"
+		printf '\n%s\n%s\n' "Too many or too few arguments provided" "This function takes the previous process's PID as an argument"
+		printf '\t%s\n' "Usage: $0 \$!"
 	fi
 }
 
-#loading_indicator
 #loading_process "${@}"
