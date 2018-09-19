@@ -23,9 +23,9 @@ function ping_vm() {
 	declare -g -r IP="192.168.1.60"
 
 	# Keep executing sleep command until ping command succeeds
-	until ping -c2 "${IP}" 1>/dev/null 2>&1 # Can also be written as &>/dev/null
+	until ping -c1 "${IP}" 1>/dev/null 2>&1 # Can also be written as &>/dev/null
 	do
-		sleep 1
+		sleep 2
 	done
 }
 
@@ -62,7 +62,7 @@ function ssh_login() {
 	if ssh_port
 	then
 		# Until the VM responds with an 'uptime' report, sleep for 5 seconds
-		until [[ $(ssh rhce uptime) =~ "load average" ]]
+		until [[ $(ssh -q rhce uptime) =~ "load average" ]]
 		do
 			sleep 5
 		done
