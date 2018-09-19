@@ -52,9 +52,11 @@ function colourise() {
 
 	if [[ $# -eq 2 && $1 =~ ^(blue|cyan|green|orange|purple|red|violet|white|yellow)$ ]]
 	then
+		# Convert first argument to uppercase
 		local -r COLOUR="${1^^}"
 		local -r STRING="${2}"
 
+		# Print the colourised text
 		printf '%s\n' "${!COLOUR}${STRING}${RESET}"
 	else
 		printf '%s\n' "Incorrect usage"
