@@ -61,12 +61,18 @@ function ping_vm() {
 	# Using the '-g' flag overrides this. Check 'help declare'
 	# for reference.
 	local -r IP="192.168.1.60"
+	local -r END_TIME=$((${SECONDS}+30))
 
 	printf '\n%s\n' "Trying to ping VM"
-	# Keep executing sleep command until ping command succeeds
-	until ping -c1 "${IP}" 1>/dev/null 2>&1 # Can also be written as &>/dev/null
+
+	# Run loop for 30 seconds
+	while [[ "${SECONDS}" -lt ${END_TIME} ]]
 	do
-		sleep 2
+		# Keep executing sleep command until ping command succeeds
+		until ping -c1 "${IP}" 1>/dev/null 2>&1 # Can also be written as &>/dev/null
+		do
+			sleep 2
+		done
 	done
 }
 
