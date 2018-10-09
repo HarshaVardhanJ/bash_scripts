@@ -16,6 +16,8 @@
 #                            ./RHCE_vm.sh off
 ################
 
+# Import the 'loading_indicator.sh' script
+source ~/GitRepos/bash_scripts/loading_indicator.sh
 
 # Function to control state of VM, depending on the argument given to the script
 # If the 'on' argument is given, this function starts the VM
@@ -52,7 +54,6 @@ function control_vm() {
 	fi
 }
 
-
 # Function to check if VM is responding to pings
 function ping_vm() {
 	# IP Address of RHCE VM (Local variable)
@@ -65,14 +66,17 @@ function ping_vm() {
 
 	printf '\n%s\n' "Trying to ping VM"
 
-	# Run loop for 30 seconds
-	while [[ "${SECONDS}" -lt ${END_TIME} ]]
+	# Keep executing sleep command until ping command succeeds or until 30 seconds are up
+	until ping -c1 "${IP}" 1>/dev/null 2>&1 # Can also be written as &>/dev/null
 	do
-		# Keep executing sleep command until ping command succeeds
-		until ping -c1 "${IP}" 1>/dev/null 2>&1 # Can also be written as &>/dev/null
-		do
-			sleep 2
-		done
+		loading_indicator
+
+		# If time exceeds 30 seconds, exit.
+		if [[ ${SECONDS} -gt ${END_TIME} ]]
+		then
+			printf '\n%s\n' "VM has not responded to ICMP echo requests for 30 seconds. Exiting script."
+			exit 1
+		fi
 	done
 }
 
@@ -88,7 +92,8 @@ function ssh_port() {
 		# Check if VM is accepting connections on port 22
 		until nc -z "${IP}" 22 1>/dev/null 2>&1
 		do
-			sleep 2
+#			sleep 2
+			loading_indicator
 		done
 	fi
 }
@@ -103,7 +108,8 @@ function ssh_login() {
 		printf '\n%s\n' "The SSH port for the VM is open and accepting connections"
 		until [[ $(ssh -q rhce uptime) =~ "load average" ]]
 		do
-			sleep 5
+#			sleep 5
+			loading_indicator
 		done
 	fi
 }
@@ -128,7 +134,7 @@ function check_input() {
 				;;
 		esac
 	else
-		printf '\n%s\n\t%s\n\t%s\n' " $0 : Incorrect argument." "USAGE: $0 off" "USAGE: $0 on"
+		printf '\n%s\n\t%s\n\t%s\n' " $0 : Incorrect number of arguments." "USAGE: $0 off" "USAGE: $0 on"
 		exit 1
 	fi
 }
@@ -142,7 +148,7 @@ then
 	# If SSH connections can be made, start an SSH session
 	if ssh_login
 	then
-		printf '\n%s\n' "VM can be accessed via SSH. Logging in..."
+		printf '\n%s\n\n' "VM can be accessed via SSH. Logging in..."
 		ssh -q rhce
 	fi
 # If the argument given is 'off'

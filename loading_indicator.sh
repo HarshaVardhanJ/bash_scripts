@@ -45,4 +45,4 @@ function loading_process() {
 	fi
 }
 
-#loading_process "${@}"
+# End of script
