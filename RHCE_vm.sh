@@ -64,10 +64,10 @@ function ping_vm() {
 	local -r IP="192.168.1.60"
 	local -r END_TIME=$((${SECONDS}+30))
 
-	printf '\n%s\n' "Trying to ping VM"
+	printf '\n%s\t' "Trying to ping VM"
 
 	# Keep executing sleep command until ping command succeeds or until 30 seconds are up
-	until ping -c1 "${IP}" 1>/dev/null 2>&1 # Can also be written as &>/dev/null
+	until ping -c1 "${IP}" 1>/dev/null 2>&1	# Can also be written as &>/dev/null
 	do
 		loading_indicator
 
@@ -84,6 +84,7 @@ function ping_vm() {
 # Function to check if SSH port is open and is accepting connections
 function ssh_port() {
 	local -r IP="192.168.1.60"
+	local -r END_TIME=$((${SECONDS}+30))
 
 	# If VM is running and is responding to ICMP echo requests
 	if control_vm && ping_vm
@@ -92,8 +93,14 @@ function ssh_port() {
 		# Check if VM is accepting connections on port 22
 		until nc -z "${IP}" 22 1>/dev/null 2>&1
 		do
-#			sleep 2
 			loading_indicator
+
+			# If time exceeds 30 seconds, exit.
+			if [[ ${SECONDS} -gt ${END_TIME} ]]
+			then
+				printf '\n%s\n' "Unable to connect to SSH port for 30 seconds. Exiting script."
+				exit 1
+			fi
 		done
 	fi
 }
@@ -105,10 +112,9 @@ function ssh_login() {
 	if ssh_port
 	then
 		# Until the VM responds with an 'uptime' report, sleep for 5 seconds
-		printf '\n%s\n' "The SSH port for the VM is open and accepting connections"
+		printf '\n%s\t' "The SSH port for the VM is open and accepting connections"
 		until [[ $(ssh -q rhce uptime) =~ "load average" ]]
 		do
-#			sleep 5
 			loading_indicator
 		done
 	fi
