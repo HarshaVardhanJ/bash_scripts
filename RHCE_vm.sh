@@ -16,8 +16,6 @@
 #                            ./RHCE_vm.sh off
 ################
 
-# Import the 'loading_indicator.sh' script
-source ~/GitRepos/bash_scripts/loading_indicator.sh
 
 # Function to control state of VM, depending on the argument given to the script
 # If the 'on' argument is given, this function starts the VM
@@ -69,7 +67,7 @@ function ping_vm() {
 	# Keep executing sleep command until ping command succeeds or until 30 seconds are up
 	until ping -c1 "${IP}" 1>/dev/null 2>&1	# Can also be written as &>/dev/null
 	do
-		loading_indicator
+		sleep 1
 
 		# If time exceeds 30 seconds, exit.
 		if [[ ${SECONDS} -gt ${END_TIME} ]]
@@ -93,7 +91,7 @@ function ssh_port() {
 		# Check if VM is accepting connections on port 22
 		until nc -z "${IP}" 22 1>/dev/null 2>&1
 		do
-			loading_indicator
+			sleep 1
 
 			# If time exceeds 30 seconds, exit.
 			if [[ ${SECONDS} -gt ${END_TIME} ]]
@@ -115,7 +113,7 @@ function ssh_login() {
 		printf '\n%s\t' "The SSH port for the VM is open and accepting connections"
 		until [[ $(ssh -q rhce uptime) =~ "load average" ]]
 		do
-			loading_indicator
+			sleep 1
 		done
 	fi
 }
