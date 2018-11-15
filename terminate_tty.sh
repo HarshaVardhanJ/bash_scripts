@@ -18,7 +18,7 @@
 
 # Cleanup function that unsets all variables and arrays used in this script
 function finish() {
-	for VAR in SELF_TTY TTY_ARRAY TTY_PICKED KILL_TTY PS3
+	for VAR in TTY_ARRAY KILL_TTY
 	do
 		# Unsetting/destroying variable/array
 		unset -v "${VAR}"
@@ -27,20 +27,21 @@ function finish() {
 
 
 # Trap the following signals and run the 'finish' function to cleanup
-trap finish INT EXIT SIGHUP SIGINT SIGKILL SIGTERM
+trap finish EXIT SIGHUP SIGINT SIGTERM
 
 
 # Function that generates an array that contains username and tty values
 # of other tty sessions
 function tty_list() {
 	# Get value of own tty
-	declare SELF_TTY="$(tty | cut -d'/' -f3)"
+	local -r SELF_TTY
+	SELF_TTY="$(tty | cut -d'/' -f3)"
 
 	# Declaring a global array to store values of user and associated tty
 	declare -ga TTY_ARRAY
 
 	# Maps all values of 'username tty' to the 'TTY_ARRAY' array
-	mapfile -t TTY_ARRAY<<<"$(last | egrep "tty|pts" | grep -i "logged in" | grep -iv "${SELF_TTY}" | awk '{print $1, $2}')"
+	mapfile -t TTY_ARRAY<<<"$(last | grep -E "tty|pts" | grep -i "logged in" | grep -iv "${SELF_TTY}" | awk '{print $1, $2}')"
 
 	# If the 'TTY_ARRAY' array is not empty
 	if [[ "${#TTY_ARRAY[@]}" ]] && [[ "${TTY_ARRAY[0]}" != "" ]]
@@ -65,7 +66,7 @@ function tty_selector() {
 	tty_list
 
 	# PS3 prompt. Will be displayed while the user is prompted to pick a tty to terminate
-	declare PS3="Pick a tty to terminate. To terminate all of them, pick the last option. Or type 'q' to exit. 
+	local PS3="Pick a tty to terminate. To terminate all of them, pick the last option. Or type 'q' to exit. 
 	[1-${#TTY_ARRAY[@]}] : "
 
 	while true
@@ -100,8 +101,9 @@ function tty_selector() {
 						KILL_TTY+=("$(printf '%s' "${INDEX}" | awk '{print $2}')")
 					done
 				else
-					# Assign selected tty to global, read-only variable 'KILL_TTY'
-					declare -g KILL_TTY="$(printf '%s' "${TTY_PICKED}" | awk '{print $2}')"
+					# Assign selected tty to global variable 'KILL_TTY'
+					declare -g KILL_TTY
+					KILL_TTY="$(printf '%s' "${TTY_PICKED}" | awk '{print $2}')"
 				fi
 
 				break 2
