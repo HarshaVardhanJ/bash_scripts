@@ -34,7 +34,7 @@ trap finish EXIT SIGHUP SIGINT SIGTERM
 # of other tty sessions
 function tty_list() {
 	# Get value of own tty
-	local -r SELF_TTY
+	local SELF_TTY
 	SELF_TTY="$(tty | cut -d'/' -f3)"
 
 	# Declaring a global array to store values of user and associated tty
