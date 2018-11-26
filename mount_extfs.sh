@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 #
 #: Title        :   mount_extfs.sh
-#: Date         :	26-Nov-2018
-#: Author       :	"Harsha Vardhan J" <vardhanharshaj@gmail.com>
+#: Date         :   26-Nov-2018
+#: Author       :   "Harsha Vardhan J" <vardhanharshaj@gmail.com>
 #: Version      :   1.0 (Stable)
 #: Description  :   This script checks for a volume of type Linux
 #                   and tries to mount it to a predefined directory
 #                   using the 'fuse-ext2' utility.
 #                
 #: Options      :   None
-#: Usage		:	Call the script.
+#: Usage        :   Call the script.
 #                                  ./mount_extfs.sh
 ################
 
