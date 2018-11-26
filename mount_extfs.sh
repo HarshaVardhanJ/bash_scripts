@@ -35,9 +35,9 @@ function mount_point() {
 		exit 0
 	# If the 'MOUNT_POINT' directory does not exist, create it
 	else
-		mkdir -vp "${MOUNT_POINT}"
-		printf '%s' "${MOUNT_POINT}"
-		exit 0
+		mkdir -p "${MOUNT_POINT}" && \
+			printf '%s' "${MOUNT_POINT}" && \
+			exit 0
 	fi
 
 }
