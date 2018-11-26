@@ -19,13 +19,21 @@
 # If the directory does not exist, it is created.
 function mount_point() {
 
+	# Parent directory of mount point
 	local MOUNT_PARENT_DIR="$(ls -d ~/Desktop)"
+
+	# Directory where EXT filesystem is to be mounted
 	local MOUNT_DIR="extfs_mount"
+
+	# Complete path to mount point
 	local MOUNT_POINT="${MOUNT_PARENT_DIR}"/"${MOUNT_DIR}"
+
+	# If the 'MOUNT_POINT' directory exists
 	if [[ -d "${MOUNT_POINT}" ]]
 	then
 		printf '%s' "${MOUNT_POINT}"
 		exit 0
+	# If the 'MOUNT_POINT' directory does not exist, create it
 	else
 		mkdir -vp "${MOUNT_POINT}"
 		printf '%s' "${MOUNT_POINT}"
@@ -56,7 +64,7 @@ function mount_disk() {
 				# If the script is not run with root privileges
 				if [[ "$(whoami)" != "root" ]]
 				then
-					printf '\n%s' "The next command will be run with 'sudo'. You will be prompted for the password." && sleep 2
+					printf '\n%s\n' "The next command will be run with 'sudo'. You will be prompted for the password." && sleep 2
 				fi
 
 				# Command that mounts the volume "${MOUNT_DISK}" at the mount point "${MOUNT_POINT}" as read-write
