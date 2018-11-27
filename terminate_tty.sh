@@ -35,7 +35,19 @@ trap finish EXIT SIGHUP SIGINT SIGTERM
 function tty_list() {
 	# Get value of own tty
 	local SELF_TTY
-	SELF_TTY="$(tty | cut -d'/' -f3)"
+	local MACHINE="$(uname -a)"
+
+	# Different 'cut' implementations for different OSs
+	if [[ "${MACHINE}" =~ "Linux" ]]
+	then
+		SELF_TTY="$(tty | cut -d'/' -f3,4)"
+	elif [[ "${MACHINE}" =~ "Darwin" ]]
+	then
+		SELF_TTY="$(tty | cut -d'/' -f3)"
+	else
+		printf '\n%s\n' "Not a GNU/Linux or BSD based OS. Script will not run."
+		exit 1
+	fi
 
 	# Declaring a global array to store values of user and associated tty
 	declare -ga TTY_ARRAY
@@ -66,8 +78,14 @@ function tty_selector() {
 	tty_list
 
 	# PS3 prompt. Will be displayed while the user is prompted to pick a tty to terminate
-	local PS3="Pick a tty to terminate. To terminate all of them, pick the last option. Or type 'q' to exit. 
-	[1-${#TTY_ARRAY[@]}] : "
+	# If more than 1 tty have been found
+	if [[ ${#TTY_ARRAY[@]} -gt 1 ]]
+	then
+		local PS3="Pick a tty to terminate. To terminate all of them, pick the last option. Or type 'q' to exit. [1-${#TTY_ARRAY[@]}] : "
+	elif [[ ${#TTY_ARRAY[@]} -eq 1 ]]
+	then
+		local PS3="Confirm to terminate the tty by entering the number beside it. Or type 'q' to exit. : "
+	fi
 
 	while true
 	do
