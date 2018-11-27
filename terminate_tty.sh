@@ -9,9 +9,9 @@
 #                   picked is terminated. The user also has an option
 #                   of terminating all ttys at once.
 #
-#: Options      :	None required. None accepted.
-#: Usage		:	Run the script. For example,
-#                      ./terminate_tty.sh
+#: Options      :   None required. None accepted.
+#: Usage        :   Run the script. For example,
+#                   ./terminate_tty.sh
 ################
 
 
