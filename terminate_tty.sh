@@ -153,7 +153,7 @@ function tty_kill() {
 			for SESSION in "${KILL_TTY[@]}"
 			do
 				# Killing all tty in 'KILL_TTY' array
-				pkill -t "${SESSION}" && printf '\n%s' "TTY '${SESSION}' has been terminated."
+				pkill -t "${SESSION}" && printf '\n%s\n' "TTY '${SESSION}' has been terminated."
 			done
 		else
 			# Killing the tty picked by the user
