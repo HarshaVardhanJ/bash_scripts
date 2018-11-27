@@ -89,6 +89,9 @@ function tty_selector() {
 
 	while true
 	do
+		# Print header for clarity
+		printf '%s %s\n%s\n' "  USER" "TTY" "------------"
+
 		# Prompt user to pick a tty
 		# The option number picked is stored $REPLY
 		# The content of the option picked is stored in $TTY_PICKED
