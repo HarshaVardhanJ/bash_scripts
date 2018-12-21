@@ -1,22 +1,43 @@
 #!/usr/bin/env bash
 #
-#: Title        :	colourise_output.sh
-#: Date         :	18-Aug-2018
-#: Author       :	"Harsha Vardhan J" <vardhanharshaj@gmail.com>
-#: Version      :	1.0 (Stable)
-#: Description  :	This script contains a function which
-#                	helps colourise any string.
-#: Options      :	Requires two arguments. First one is the colour, second is
-#					the string to be printed.
-#: Usage		:	The colour of the text is to be passed as the first argument.
-#					The text to be printed is the second argument. Note that the
-#					text should be passed in quotation marks. The colour can be
-#                   case-insensitive too.
-#					Example:	./colourise_output.sh blue "Text in blue"
-#								./colourise_output.sh BlUe "Text in blue"
+#: Title        :   colourise_output.sh
+#: Date         :   18-Aug-2018
+#: Author       :   "Harsha Vardhan J" <vardhanharshaj@gmail.com>
+#: Version      :   2.0 (Stable)
+#: Description  :   This script contains a function which
+#                	helps colourise any string(s).
+#: Options      :   Requires four arguments,at least. First one is the '--colour' option,
+#                   second is the colour name, third is the '--string' option, fourth is 
+#                   the string to be printed.
+#: Usage        :   The colour of the text is to be passed as an argument
+#                   to the '--colour' option. '--color' and '-c' are acceptable too. The 
+#                   text to be printed is passed as an argument to the '--string' option.
+#                   '-s' is acceptable too.
+#                   Note that the text should be passed witin quotation marks. The colour 
+#                   option can be case-insensitive too. Multiple strings with different 
+#                   colours can be passed too.
+#                   Example:    ./colourise_output.sh --colour blue --string "Text in blue"
+#                               ./colourise_output.sh --color BlUe --string "Text in blue"
+#                               ./colourise_output.sh --colour red --string "Red text" \
+#                                                     -c blue -s "Blue text"
 ################
 
+# Function that prints some text intended to inform the user
+# about the script's usage
+function print_help() {
+	printf '%s\n\n' "Incorrect usage"
+	printf '%-17s\t%s\n' "Usage : " "$0 --colour colour --string \"Text to be coloured\""
+	printf '\t\t\t%s\n' "$0 --color color --string \"Text to be coloured\""
+	printf '\t\t\t%s\n' "$0 --color color --string \"Text to be coloured\" -c color -s \"Text to be coloured\""
+	printf '\n%-17s\t%s\n' "Colours accepted:" "blue, cyan, green, orange, purple, red, violet, white, yellow"
+	printf '\n%-17s\t%s\n' "Note : " "All strings will be printed followed by a space. You do not need to add spaces between multiple strings."
+	printf '\t\t\t%s\n' "The strings should not be empty."
+}
+
+# Function containing all colour definitions(codes) and which prints the coloured text
 function colourise() {
+
+	# Colour definitions
 	if tput setaf 1 &> /dev/null; then
 		tput sgr0; # reset colors
 		local -r BOLD=$(tput bold);
@@ -50,18 +71,69 @@ function colourise() {
 	# This is to help match the given colour in a case-insensitive fashion
 	shopt -qs nocasematch
 
-	if [[ $# -eq 2 && $1 =~ ^(blue|cyan|green|orange|purple|red|violet|white|yellow)$ ]]
+	# Implementation of adding multiple colour codes with multiple strings
+	# If an even number of arguments are provided and is greater than 4
+	if [[ $(expr $# % 2) -eq 0  && $# -ge 4 ]]
 	then
-		# Convert first argument to uppercase
-		local -r COLOUR="${1^^}"
-		local -r STRING="${2}"
+		# Declaring local arrays for storing colours and strings
+		local -a COLOUR
+		local -a STRING
+
+		# While the number of arguments is > 0
+		while [[ $# -gt 0 ]]
+		do
+			case "$1" in
+				# If "first" argument is either 'colour' or 'color'
+				--colour|--color|-c)
+					# Add the accompanying argument to variable $COLOUR
+					if [[ "$2" =~ ^(blue|cyan|green|orange|purple|red|violet|white|yellow)$ ]]
+					then
+						COLOUR+=("${2^^}")  # Add colour to $COLOUR array and change colour name to uppercase
+						shift 2             # Shift the first two arguments away : "--colour red" have been shifted away
+					else
+						printf '%s\n' "Incorrect colour option"
+						print_help
+						exit 1
+					fi
+					;;
+				--string|-s)
+					# If the string in the second argument is not empty
+					if [[ -n "$2" ]]
+					then
+						STRING+=("$2")   # Add string to $STRING array
+						shift 2          # Shift two arguments away: "--string "example" have been shifted away"
+					# If the string provided is empty, print help text and exit
+					else
+						printf '%s\n' "Empty string provided. Check help text below"
+						print_help
+						exit 1
+					fi
+					;;
+				# If any other argument is provided, then print help text and exit
+				*)
+					print_help
+					;;
+			esac
+		done
 
 		# Print the colourised text
-		printf '%s\n' "${!COLOUR}${STRING}${RESET}"
+		# Cycle through all indices of the $COLOUR and $STRING
+		# arrays.
+		#
+		# seq 0 1 3 = 0 1 2 3
+		# ${#STRING[@]} = Number of elements in $STRING array(which is equal to half of number of arguments)
+		# which is equal to total number of times a string should be printed.
+		# For each coloured string, there are two arguments provided.
+		for ARGS in $(seq 0 1 ${#STRING[@]})
+		do
+			printf '%s ' "${!COLOUR["${ARGS}"]}" "${STRING["${ARGS}"]}"
+		done
+	# If number of arguments is not even and are not greater than 4, print help text and exit
 	else
-		printf '%s\n' "Incorrect usage"
-		printf '%-17s\t%s\n' "Usage : " "$0 colour \"Text to be coloured\""
-		printf '%-17s\t%s\n' "Colours accepted:" "blue, cyan, green, orange, purple, red, violet, white, yellow"
+		printf '%s\n' "Number of arguments provided = $#"
+		printf '%s\n' "Number of arguments required = 4(atleast)"
+		print_help
+		exit 1
 	fi
 
 	# Unset case-insensitive matching in 'bash'
@@ -69,4 +141,7 @@ function colourise() {
 	shopt -qu nocasematch
 }
 
+# Calling the 'colourise' function and passing all arguments to it
 colourise "$@"
+
+# End of script
