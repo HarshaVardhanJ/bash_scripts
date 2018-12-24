@@ -25,13 +25,22 @@
 # Function that prints some text intended to inform the user
 # about the script's usage
 function print_help() {
-	printf '%s\n\n' "Incorrect usage"
-	printf '%-17s\t%s\n' "Usage : " "$0 --colour colour --string \"Text to be coloured\""
-	printf '\t\t\t%s\n' "$0 --color color --string \"Text to be coloured\""
-	printf '\t\t\t%s\n' "$0 --color color --string \"Text to be coloured\" -c color -s \"Text to be coloured\""
-	printf '\n%-17s\t%s\n' "Colours accepted:" "blue, cyan, green, orange, purple, red, violet, white, yellow"
-	printf '\n%-17s\t%s\n' "Note : " "All strings will be printed followed by a space. You do not need to add spaces between multiple strings."
-	printf '\t\t\t%s\n' "The strings should not be empty."
+	cat <<- EOF
+Incorrect usage
+
+Usage            :          $0 --colour colour --string "Text to be coloured"
+                            $0 --color color --string "Text to be coloured"
+                            $0 --color color --string "Text to be coloured" -c color -s "Text to be coloured"
+
+Colours Accepted :          blue, cyan, green, orange, purple, red, violet, white, yellow
+
+Note             :          All strings will be printed followed by a space. You do not need to add spaces between multiple strings
+                            The strings should not be empty.
+
+							The script accepts '--colour', '--color', and '-c' as flags for the colour(s)
+							The script accepts '--string' and '-s' as flags for the string(s)
+
+EOF
 }
 
 # Function containing all colour definitions(codes) and which prints the coloured text
@@ -73,21 +82,18 @@ function colourise() {
 
 	# Implementation of adding multiple colour codes with multiple strings
 	# If an even number of arguments are provided and is greater than 4
-	if [[ $(expr $# % 2) -eq 0  && $# -ge 4 ]]
-	then
+	if [[ $(( $# % 2 )) -eq 0  && $# -ge 4 ]] ; then
 		# Declaring local arrays for storing colours and strings
 		local -a COLOUR
 		local -a STRING
 
 		# While the number of arguments is > 0
-		while [[ $# -gt 0 ]]
-		do
+		while [[ $# -gt 0 ]] ; do
 			case "$1" in
 				# If "first" argument is either 'colour' or 'color'
 				--colour|--color|-c)
 					# Add the accompanying argument to variable $COLOUR
-					if [[ "$2" =~ ^(blue|cyan|green|orange|purple|red|violet|white|yellow)$ ]]
-					then
+					if [[ "$2" =~ ^(blue|cyan|green|orange|purple|red|violet|white|yellow)$ ]] ; then
 						COLOUR+=("${2^^}")  # Add colour to $COLOUR array and change colour name to uppercase
 						shift 2             # Shift the first two arguments away : "--colour red" have been shifted away
 					else
@@ -95,11 +101,10 @@ function colourise() {
 						print_help
 						exit 1
 					fi
-					;;
+				;;
 				--string|-s)
 					# If the string in the second argument is not empty
-					if [[ -n "$2" ]]
-					then
+					if [[ -n "$2" ]] ; then
 						STRING+=("$2")   # Add string to $STRING array
 						shift 2          # Shift two arguments away: "--string "example" have been shifted away"
 					# If the string provided is empty, print help text and exit
@@ -108,11 +113,11 @@ function colourise() {
 						print_help
 						exit 1
 					fi
-					;;
+				;;
 				# If any other argument is provided, then print help text and exit
 				*)
 					print_help
-					;;
+				;;
 			esac
 		done
 
@@ -124,8 +129,7 @@ function colourise() {
 		# ${#STRING[@]} = Number of elements in $STRING array(which is equal to half of number of arguments)
 		# which is equal to total number of times a string should be printed.
 		# For each coloured string, there are two arguments provided.
-		for ARGS in $(seq 0 1 ${#STRING[@]})
-		do
+		for ARGS in $( seq 0 1 $(( ${#STRING[@]} - 1 )) ) ; do
 			printf '%s ' "${!COLOUR["${ARGS}"]}" "${STRING["${ARGS}"]}"
 		done
 	# If number of arguments is not even and are not greater than 4, print help text and exit

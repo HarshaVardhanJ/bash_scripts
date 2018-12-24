@@ -29,15 +29,12 @@ function mount_point() {
 	local MOUNT_POINT="${MOUNT_PARENT_DIR}"/"${MOUNT_DIR}"
 
 	# If the 'MOUNT_POINT' directory exists
-	if [[ -d "${MOUNT_POINT}" ]]
-	then
+	if [[ -d "${MOUNT_POINT}" ]] ; then
 		printf '%s' "${MOUNT_POINT}"
-		exit 0
 	# If the 'MOUNT_POINT' directory does not exist, create it
 	else
-		mkdir -p "${MOUNT_POINT}" && \
-			printf '%s' "${MOUNT_POINT}" && \
-			exit 0
+		mkdir -p "${MOUNT_POINT}" \
+		&& printf '%s' "${MOUNT_POINT}"
 	fi
 
 }
@@ -52,8 +49,8 @@ function install_fuse_ext2() {
 	local INSTALL_SCRIPT="${TEMP_DIR}"/"${SCRIPT_NAME}"
 
 	# Changing to temp directory and creating installation script file
-	cd "${TEMP_DIR}" && \
-		cat <<EOF> "${INSTALL_SCRIPT}"
+	cd "${TEMP_DIR}" \
+	&& cat <<EOF> "${INSTALL_SCRIPT}"
 export PATH=/opt/gnu/bin:$PATH
 export PKG_CONFIG_PATH=/opt/gnu/lib/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 
@@ -133,20 +130,17 @@ sudo make install
 EOF
 
 	# If script exists, run it
-	if [[ -s "${INSTALL_SCRIPT}" ]]
-	then
-		chmod u+x "${INSTALL_SCRIPT}" && \
-			"${INSTALL_SCRIPT}" && \
-			cd ../
-		exit 0
+	if [[ -s "${INSTALL_SCRIPT}" ]] ; then
+		chmod u+x "${INSTALL_SCRIPT}" \
+		&& "${INSTALL_SCRIPT}" \
+		&& cd ../
 	else
 		printf '\n%s\n' "Installation script could not be found."
 		exit 1
 	fi
 
 	# Cleanup. Removing temporary directory and created files
-	for FILE in "${TEMP_DIR}"
-	do
+	for FILE in "${TEMP_DIR}" ; do
 		rm -r "${FILE}"
 		unset -v "${FILE}"
 	done
@@ -158,8 +152,7 @@ EOF
 function check_installation() {
 
 	# If the 'fuse-ext2' package is accessible
-	if [[ "$(which fuse-ext2)" ]]
-	then
+	if [[ "$(which fuse-ext2)" ]] ; then
 		 return 0
 	# If 'fuse-ext2' is not installed, ask user.
 	else
@@ -170,25 +163,23 @@ function check_installation() {
 				printf '\n%s\n' "Checking if Homebrew is installed."
 				
 				# If Homebrew is installed and is accessible
-				if [[ "$(which brew)" ]]
-				then
+				if [[ "$(which brew)" ]] ; then
 					printf '\n%s\n' "Homebrew is installed. Installing the cask 'osxfuse' as a dependency"
 
 					# If 'homebrew/cask' has been tapped
-					if [[ "$(brew tap | grep 'homebrew/cask')" ]]
-					then
+					if [[ "$(brew tap | grep 'homebrew/cask')" ]] ; then
 						brew cask install osxfuse 1>/dev/null 2>&1
 					else
-						brew tap homebrew/cask 1>/dev/null 2>&1 && \
-							brew cask install osxfuse 1>/dev/null 2>&1
+						brew tap homebrew/cask 1>/dev/null 2>&1 \
+						&& brew cask install osxfuse 1>/dev/null 2>&1
 					fi
 
 					# If 'osxfuse' has been installed
-					if [[ "$(brew cask list | grep 'osxfuse')" ]]
-					then
+					if [[ "$(brew cask list | grep 'osxfuse')" ]] ; then
 						printf '\n%s\n' "Installing 'fuse-ext2' now. You will see a lot of text and warnings scroll by. \
-							This is normal. You will be prompted for the administrator's password while the script is executing." && \
-							sleep 5
+										This is normal. You will be prompted for the administrator's password while the \
+										script is executing." \
+						&& sleep 5
 						# Calling function that runs the 'fuse-ext2' installer script
 						install_fuse_ext2
 					else
@@ -199,11 +190,11 @@ function check_installation() {
 					printf '\n%s\n' "Homebrew is not installed."
 					exit 1
 				fi
-				;;
+			;;
 			n|N|*)
 				printf '\n%s\n' "Not installing the 'fuse-ext2' package. Exiting"
 				exit 1
-				;;
+			;;
 		esac
 	fi
 }
@@ -218,21 +209,17 @@ function mount_disk() {
 	local MOUNT_POINT="$(mount_point)"
 
 	# If the 'MOUNT_POINT' variable has been set and is not an empty string
-	if [[ -v MOUNT_POINT && -n "${MOUNT_POINT}" ]]
-	then
+	if [[ -v MOUNT_POINT && -n "${MOUNT_POINT}" ]] ; then
 		# Local variable to store the volume to be mounted
 		local MOUNT_DISK="$(diskutil list | grep "Linux" | awk '{print $5}')"
 		local MOUNT_PREFIX="/dev/"
 
 		# If the 'MOUNT_DISK' variable has been set and is not an empty string
-		if [[ -v MOUNT_DISK && -n "${MOUNT_DISK}" ]]
-		then
+		if [[ -v MOUNT_DISK && -n "${MOUNT_DISK}" ]] ; then
 			# If the 'fuse-ext2' utility exists and is accessible
-			if [[ $(which fuse-ext2) ]]
-			then 
+			if [[ $(which fuse-ext2) ]] ; then 
 				# If the script is not run with root privileges
-				if [[ "$(whoami)" != "root" ]]
-				then
+				if [[ "$(whoami)" != "root" ]] ; then
 					printf '\n%s\n' "The next command will be run with 'sudo'. You will be prompted for the password." && sleep 2
 				fi
 
@@ -256,7 +243,13 @@ function mount_disk() {
 
 }
 
-# Calling the 'mount_disk' function
-mount_disk
+function main() {
+	# Calling the 'mount_disk' function
+	# to kick off the beginning of the script
+	mount_disk
+}
+
+# Calling the 'main' function. This calls the appropriate functions
+main
 
 # End of script
