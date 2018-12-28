@@ -13,7 +13,7 @@ function finish
 {
     for FILE in "${TEMP}" "${COMP1}" "${COMP2}" "${MOUNT1}" "${MOUNT2}" "${IMG}"
     do
-        if [ -e "${FILE}" ]
+        if [[ -e "${FILE}" ]]
         then
             cd "$( dirname "${FILE}" )" && rm -v "$( basename "${FILE}" )"
         fi
@@ -722,11 +722,11 @@ then
                     case $RESPONSE in
                         $YES)
                             display_info 'Creating file named "ssh" on '"${DRIVE}"'.' 2
-                            touch "${DRIVE}"/ssh
-							SSH_FILE="$( ls "${DRIVE}"/ssh )"
+                            cd "${DRIVE}" && touch ./ssh
+							SSH_FILE="${DRIVE}""/ssh"
                             
 							# Checking if 'ssh' file was created
-                            if [[ -f "${SSH_FILE}" ]]
+                            if [[ -a "${SSH_FILE}" ]]
                             then
 								display_info 'File created on '"${DRIVE}"'.' 2
 								FLAG=490
@@ -766,8 +766,8 @@ then
                             case $RESP in
                                 $OK)
                                     SSID="$( <"${TEMP}" )"
-                                    touch "${DRIVE}"/wpa_supplicant.conf
-									WIFI_FILE="$( ls "${DRIVE}"/wpa_supplicant.conf )"
+                                    cd "${DRIVE}" && touch wpa_supplicant.conf
+									WIFI_FILE="${DRIVE}""/wpa_supplicant.conf"
                                     dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "WiFi Connection Configuration" --clear \
                                         --inputbox "Enter password of WiFi network" 0 0 2>"${TEMP}"
                                     RESP=$?
@@ -775,15 +775,15 @@ then
                                     case $RESP in
                                         $OK)
                                             cat <<-EOF >"${WIFI_FILE}"
-											ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-											update_config=1
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
 
-											network={
-												ssid='"${SSID}"'
-												key-mgmt=WPA2-PSK
-												psk='"$( cat "${TEMP}" )"'
-											}
-											EOF
+network={
+	ssid='"${SSID}"'
+	key-mgmt=WPA2-PSK
+	psk='"$( cat "${TEMP}" )"'
+}
+EOF
 
 											# Checking if 'wpa_supplicant.conf' file exists and is of non-zero size
 											if [[ -s "${WIFI_FILE}" ]]
