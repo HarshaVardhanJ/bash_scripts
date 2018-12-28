@@ -721,14 +721,14 @@ then
 
                     case $RESPONSE in
                         $YES)
-                            display_info 'Creating file named "ssh" on '"${DRIVE}"'.' 2
-                            cd "${DRIVE}" && touch ./ssh
-							SSH_FILE="${DRIVE}""/ssh"
+                            display_info 'Creating file named "ssh" on '"${MOUNT_DRIVE}"'.' 2
+                            touch "${MOUNT_DRIVE}"/ssh
+							SSH_FILE="$(ls "${MOUNT_DRIVE}"/ssh)"
                             
 							# Checking if 'ssh' file was created
                             if [[ -a "${SSH_FILE}" ]]
                             then
-								display_info 'File created on '"${DRIVE}"'.' 2
+								display_info 'File created on '"${MOUNT_DRIVE}"'.' 2
 								FLAG=490
 							else
 								display_info "File could not be created." 2
@@ -766,8 +766,8 @@ then
                             case $RESP in
                                 $OK)
                                     SSID="$( <"${TEMP}" )"
-                                    cd "${DRIVE}" && touch wpa_supplicant.conf
-									WIFI_FILE="${DRIVE}""/wpa_supplicant.conf"
+                                	touch "${MOUNT_DRIVE}"/wpa_supplicant.conf
+									WIFI_FILE="$(ls "${MOUNT_DRIVE}"/wpa_supplicant.conf)"
                                     dialog --backtitle "Raspberry Pi Image Burner V0.1_alpha" --title "WiFi Connection Configuration" --clear \
                                         --inputbox "Enter password of WiFi network" 0 0 2>"${TEMP}"
                                     RESP=$?
