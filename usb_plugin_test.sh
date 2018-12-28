@@ -19,7 +19,7 @@ function usb_check () {
 	then
 		TIME=$1
 	else
-		TIME="0.1"
+		TIME=0.1
 	fi
 
 	while true

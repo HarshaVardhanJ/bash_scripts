@@ -146,6 +146,6 @@ function colourise() {
 }
 
 # Calling the 'colourise' function and passing all arguments to it
-colourise "$@"
+#colourise "$@"
 
 # End of script

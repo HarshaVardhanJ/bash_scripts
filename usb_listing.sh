@@ -108,17 +108,17 @@ function drive_selector() {
 			# Check if replies match any of the following options
 			case "${REPLY}" in
 				${#ARRAY[@]})
-					colourise green "Drive Picked"
+					colourise -c green -s "Drive Picked"
 					printf "\n%s%s\n" "/dev/" "${OPTION}"
 					break
 					;;
 				R|r)
-					colourise cyan "Refresh"
+					colourise -c cyan -s "Refresh"
 					printf "\n%s\n" "Refreshing device list."
 					continue
 					;;
 				C|c)
-					colourise red "Cancel"
+					colourise -c red -s "Cancel"
 					printf "\n%s\n" "Cancelling device selection."
 					break
 					;;
