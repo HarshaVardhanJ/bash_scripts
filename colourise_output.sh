@@ -90,18 +90,21 @@ function colourise() {
 		# While the number of arguments is > 0
 		while [[ $# -gt 0 ]] ; do
 			case "$1" in
-				# If "first" argument is either 'colour' or 'color'
+				# If "first" argument is either '--colour', '--color', or '-c'
 				--colour|--color|-c)
-					# Add the accompanying argument to variable $COLOUR
+					# If the second argument contains one of the colours defined,
+					# add the accompanying argument to variable $COLOUR
 					if [[ "$2" =~ ^(blue|cyan|green|orange|purple|red|violet|white|yellow)$ ]] ; then
 						COLOUR+=("${2^^}")  # Add colour to $COLOUR array and change colour name to uppercase
 						shift 2             # Shift the first two arguments away : "--colour red" have been shifted away
+					# If the second argument does not contain any of the defined colours
 					else
 						printf '%s\n' "Incorrect colour option"
-						print_help
-						exit 1
+						print_help \
+							&& return 1
 					fi
 				;;
+				# If the "first" argument is either '--string', or '-s'
 				--string|-s)
 					# If the string in the second argument is not empty
 					if [[ -n "$2" ]] ; then
@@ -110,13 +113,14 @@ function colourise() {
 					# If the string provided is empty, print help text and exit
 					else
 						printf '%s\n' "Empty string provided. Check help text below"
-						print_help
-						exit 1
+						print_help \
+							&& return 1
 					fi
 				;;
 				# If any other argument is provided, then print help text and exit
 				*)
-					print_help
+					print_help \
+						&& return 1
 				;;
 			esac
 		done
@@ -129,6 +133,9 @@ function colourise() {
 		# ${#STRING[@]} = Number of elements in $STRING array(which is equal to half of number of arguments)
 		# which is equal to total number of times a string should be printed.
 		# For each coloured string, there are two arguments provided.
+		#
+		# 1 is being subtracted from ${#STRING[@]} because arrays in bash are indexed from 0 onwards.
+		# So, if the array has 5 elements, the value of ARGS needs to range from 0 to 4, hence the subtraction.
 		for ARGS in $( seq 0 1 $(( ${#STRING[@]} - 1 )) ) ; do
 			printf '%s ' "${!COLOUR["${ARGS}"]}" "${STRING["${ARGS}"]}"
 		done
@@ -136,8 +143,8 @@ function colourise() {
 	else
 		printf '%s\n' "Number of arguments provided = $#"
 		printf '%s\n' "Number of arguments required = 4(atleast)"
-		print_help
-		exit 1
+		print_help \
+		 && return 1
 	fi
 
 	# Unset case-insensitive matching in 'bash'
@@ -146,6 +153,6 @@ function colourise() {
 }
 
 # Calling the 'colourise' function and passing all arguments to it
-#colourise "$@"
+colourise "$@"
 
 # End of script
