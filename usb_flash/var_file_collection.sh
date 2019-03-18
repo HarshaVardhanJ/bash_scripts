@@ -41,12 +41,14 @@
 #                 ./var_file_collection.sh delvars
 ################
 
-# Importing the functions stored in the 'general_functions.sh' script
-source ./general_function.sh
+# Importing the 'general_functions.sh' script
+source ./general_functions.sh
 
 # Function that checks if the input string is a 
 # file/folder or a global variable
 #
+# Function input  : Accepts either a file/folder path, or a global variable
+# Function output : A string decribing the type of input
 function var_file_collection__check_type() {
   # Print the following as per the input type
   # If global variable, then 'GlobalVariable'

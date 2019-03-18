@@ -14,6 +14,8 @@
 #                 ./os_check
 ################
 
+# Importing the 'general_functions.sh' script
+source ./general_functions.sh
 
 # Function that returns the type of OS on
 # which the script is run. The return values
@@ -64,6 +66,6 @@ function os_check() {
 }
 
 # Calling the main function
-os_check
+#os_check
 
 # End of script
