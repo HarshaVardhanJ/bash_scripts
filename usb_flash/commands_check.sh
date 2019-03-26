@@ -38,6 +38,7 @@
 #                     where CommandArray=("command-1" "command-2")
 ################
 
+source ./general_functions.sh
 
 # script_name CommandArray
 #   where CommandArray=("whoami" "date" "time")
@@ -174,8 +175,5 @@ function command_check() {
   fi
 
 }
-
-# Calling the main function
-command_check "$@"
 
 # End of script
