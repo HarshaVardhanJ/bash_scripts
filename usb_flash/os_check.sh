@@ -10,8 +10,9 @@
 #                 function, for now. More can be added, if needed.
 #                
 #: Options      : None required.
-#: Usage        :	Call the script.
-#                 ./os_check
+#: Usage        :	Import the file and call the 'os_check' function.
+#                 This script does not need to have execute permission
+#                 as it will be imported by other functions.
 ################
 
 # Importing the 'general_functions.sh' script
@@ -58,8 +59,7 @@ function os_check() {
       printf '%s\n' "${OsArray["${Key}"]}" \
         && break
     else
-      printf '%s\n' "Operating system type not in list. Check 'os_check' function." \
-        && return 1
+      print_err -e 1 -s "Operating system type not in list. Check 'os_check' function."
     fi
   done
 

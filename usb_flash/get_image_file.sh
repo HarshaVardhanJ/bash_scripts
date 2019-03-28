@@ -17,6 +17,9 @@
 #                     ./get_image_file.sh ../relative/path/to/image/file
 ################
 
+# Importing the 'general_functions.sh' file
+source ./general_functions.sh
+
 # Function that outputs the type of the file given as
 # input. Requires one argument, which is the absolute
 # or relative path to the file whose type is to be
@@ -45,9 +48,11 @@ function get_image_file__file_signature_check_method() {
     # file -b -L /path/to/file
     "${signatureCheckCommand[@]}" "$1"
   else
-    printf '%s\n' "Expecting one file as argument. Use either absolute \
-      or absolute path." \
-      && return 1
+    print_err -e 1 -s "Expecting one file as argument. Use either relative \
+      or absolute path"
+    #printf '%s\n' "Expecting one file as argument. Use either relative \
+    #  or absolute path." \
+    #  && return 1
   fi
 
 }
@@ -99,9 +104,11 @@ function get_image_file__file_signature_match_check() {
               && break
           # If the file signature does not match any of permitted signatures
           else
-            printf '%s\n' "The file \"$1\" does not match any of the permitted signatures. \
-              Its signature is \"$(get_image_file__file_signature_check_method "$1")\"." \
-              && return 1
+            print_err -e 1 -s "The file \"$1\" does not match any of the permitted signatures. \
+              Its signature is \"$(get_image_file__file_signature_check_method "$1")\"."
+            #printf '%s\n' "The file \"$1\" does not match any of the permitted signatures. \
+            #  Its signature is \"$(get_image_file__file_signature_check_method "$1")\"." \
+            #  && return 1
           fi
         done
       fi
@@ -109,19 +116,22 @@ function get_image_file__file_signature_match_check() {
     # If the file doesn't exist, or is of size zero, or is unreadable by the user which
     # the script is running as
     else
-      printf '%s\n' "File \"$1\" either does not exist, is of zero-size,\
-        or is unreadable by the user \"$(whoami)\"." \
-        && return 1
+      printf -e 1 -s "File \"$1\" either does not exist, is of zero-size,\
+        or is unreadable by the user \"$(whoami)\"."
+      #printf '%s\n' "File \"$1\" either does not exist, is of zero-size,\
+      #  or is unreadable by the user \"$(whoami)\"." \
+      #  && return 1
     fi  
   # If number of arguments is not equal to 1
   else
-    printf '%s\n' "$# arguments have been provided. Requires only 1." \
-      && return 1
+    print_err -e 1 -s "$# arguments have been provided. Requires only 1."
+    #printf '%s\n' "$# arguments have been provided. Requires only 1." \
+    #  && return 1
   fi
 
 }
 
 # Calling the main function
-get_image_file__file_signature_match_check "$@"
+#get_image_file__file_signature_match_check "$@"
 
 # End of script

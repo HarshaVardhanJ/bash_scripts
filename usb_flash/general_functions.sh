@@ -233,8 +233,11 @@ function set_import_status() {
 	tempImportVarName="$( generate_import_status_name "$@" )"
 
 	# Declaring the import status variable as an exportable, global variable \
-	# and setting its value to 1 which indicates that it has been imported.
-	declare -gx "${tempImportVarName}"=1
+	# and setting its value to 1 which indicates that it has been imported, AND \
+	# adding the variable to the collection array which keeps track of all global \
+	# variables
+	declare -gx "${tempImportVarName}"=1 \
+		&& var_file_collection__vars_files_array "${tempImportVarName}"
 
 }
 
@@ -309,5 +312,7 @@ importFiles=(
 # has a `source ./general_functions.sh` command.
 # Importing the files defined in the 'importFiles' array
 import_files "${importFiles[@]}"
+
+#var_file_collection_vars_files_array logFile
 
 # End of script
