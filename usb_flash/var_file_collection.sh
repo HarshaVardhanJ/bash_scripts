@@ -3,7 +3,7 @@
 #: Title        : var_file_collection.sh
 #: Date         :	26-Jan-2019
 #: Author       :	"Harsha Vardhan J" <vardhanharshaj@gmail.com>
-#: Version      : 0.1
+#: Version      : 0.1 (Stable)
 #: Description  : This module that has three uses
 #                 1. Variables/files can be passed to it as
 #                    arguments which will be stored in arrays.
@@ -163,7 +163,7 @@ function var_file_collection__delete_arrays() {
   local -n ArrayName
 
   # If number of arguments = 1, and the argument is not an empty string
-  if [[ $# -eq 1 && -n "$1" && "$1" =~ "${!VarsArrayName}" ]] ; then
+  if [[ $# -eq 1 && -n "$1" && "$1" =~ "${!VarsArrayName}"|"${!FilesArrayName}" ]] ; then
     # Assigning the argument to the nameref variable
     ArrayName="$1"
 
@@ -181,12 +181,13 @@ function var_file_collection__delete_arrays() {
           # For a list of elements listed in the array defined by the 'ArrayName' \
           # nameref variable
           for VARIABLE in "${ArrayName[@]}" ; do
+            # If the variable does not match the signature of a nameref variable
             if [[ ! $(declare -p "${VARIABLE}") =~ "declare -n" ]] ; then
               # Unset the variable
               unset -v "${VARIABLE}" \
                 || print_err -e 1 -s "\"${VARIABLE}\" might be a read-only variable"
             # If VARIABLE is a 'nameref' variable
-            elif [[ $(declare -a "${VARIABLE}") =~ "declare -n" ]] ; then
+            elif [[ $(declare -p "${VARIABLE}") =~ "declare -n" ]] ; then
               # 'unset -v' will unset the variable that the nameref variable refers to, \
               # and 'unset -n' will unset the nameref variable itself. Therefore, both the \
               # nameref variable and the variable that it refers to will be unset.
@@ -199,7 +200,7 @@ function var_file_collection__delete_arrays() {
           done
           # Unset the variable that the nameref refers to, which is either \
           # 'VarsArray' or 'FilesArray'. There is no need to unset the nameref \
-          # variable as it is a local variable whose scope is restricted to this \
+          # variable 'ArrayName' as it's a local variable whose scope is restricted to this \
           # function only.
           #
           # Unsetting the 'ArrayName' nameref without the prefix '$' unsets the variable \
@@ -288,7 +289,8 @@ function var_file_collection__initialise_array() {
       # create them.
       if [[ ! -v ${VARIABLE} ]] ; then
         # Create global, exportable arrays defined by $VARIABLE
-        declare -gxa ${VARIABLE}
+        declare -gxa ${VARIABLE} \
+          || print_err -e 1 -s "Could not create variable \"${VARIABLE}\"."
       fi
     done
   fi
@@ -334,7 +336,7 @@ function var_file_collection__present_in_array() {
       if [[ -n "${VARIABLE}" ]] ; then
         # For a list of all elements in the arrays that the namerefs 'VarsArrayName' and \
         # 'FilesArrayName' point to
-        for ELEMENT in "${VarsArrayName[@]}" "${FilesArrayName}"; do 
+        for ELEMENT in "${VarsArrayName[@]}" "${FilesArrayName[@]}"; do 
           # Check if element exists in the array
           # If the input argument matches any element of the array
           if [[ "${VARIABLE}" = "${ELEMENT}" ]] ; then
@@ -453,10 +455,13 @@ function var_file_collection__add_to_array() {
 
   # If the arrays that the namerefs 'VarsArrayName' and 'FilesArrayName' point to don't exist
   else
-    # Call the 'initialise_array' module AND then call the 'add_to_array' module again(recursive \
-    # function) and pass all the input arguments to it
+    # Call the 'initialise_array' module AND then call the 'vars_files_array' module again and \
+    # pass all the input arguments to it. The 'vars_files_array' module takes care of calling the \
+    # 'present_in_array' module. It does not need to be called separately.
+    #var_file_collection__initialise_array \
+    #  && var_file_collection__add_to_array "$@"
     var_file_collection__initialise_array \
-      && var_file_collection__add_to_array "$@"
+      && var_file_collection__vars_files_array "$@"
   fi
 }
 
@@ -545,6 +550,11 @@ function var_file_collection__vars_files_array() {
       FlagVar=1
     fi
   done
+
+  # Now, if the argument matched any of the pre-defined arguments above(getvars, \
+  # getfiles, getall, delvars, delfiles, delall), the 'FlagVar' variable will be \
+  # set. When the 'FlagVar' variable is set, the code can proceed to check which \
+  # of the pre-defined arguments matches the input argument.
   
 
   #######################################
@@ -626,6 +636,9 @@ function var_file_collection__vars_files_array() {
     # The output of this module(except the errors) is added to an array(tempArray).
     tempArray=($(var_file_collection__present_in_array "$@" 2>/dev/null))
 
+    # The above command that adds the unique variables to a temporary array could be \
+    # replaced by the mapfile command, as per the recommendation from 'shellcheck'
+
     # If the temporary array has more than 0 elements
     if [[ "${#tempArray[@]}" -gt 0 ]] ; then
       # Providing the elements of the 'tempArray' array as input to the 'add_to_array' module
@@ -639,16 +652,43 @@ function var_file_collection__vars_files_array() {
 
   # If the input argument(s) does not match any of the previous conditions
   else
-    print_err -e 1 -s "Argument(s) received : \"$@\". Does not match any of the conditions."
+    print_err -e 1 -s "Argument(s) received : \"$*\". Does not match any of the conditions."
   fi
 }
 
+############################ The lines below are used for testing purposes only.
+############################ Remove them when done with testing the script. Or
+############################ comment them out.
 
-# Adding two variables in order to populate the arrays with values
+# Declaring a few variables and files for testing purposes
+declare -a TestVar2=(1 2 3 4 5)
+declare -n refVar=TestVar
+declare -i TestVar=1
+declare TestFile="/Users/harshavardhanj/Desktop/testfile"
+declare TestDir="/Users/harshavardhanj/Desktop/testdir"
+
+# Adding variables in order to populate the arrays with values
 # Used for testing purposes. Remove the below line when not needed.
-var_file_collection__add_to_array PATH PWD
+# The 'present_in_array' module is supposed to return only unique variable names. But \
+# repeated variable names are being added to the array regardless. Check what the issue \
+# could be. ******************************
+#
+# The 'vars_files_array' module is adding multiple variables to the array because, initially, \
+# all the variables are being passed to the 'present_in_array' module at once. As in beginning \
+# there are no elements in the arrays, these variables are added without checking for duplicates. \
+# The check is only successful after the array has been populated. So, to fix this, a check could \
+# be implemented where the arguments are checked for duplicate values. This way, many of the same \
+# arguments cannot to be added to an empty array. 
+#
+# Add a module/conditional block that verifies if each of the arguments passed are unique. ******
+var_file_collection__vars_files_array refVar TestFile TestVar TestVar TestDir TestVar2 TestFile TestDir
+var_file_collection__present_in_array TestDir refVar TestVar TestVar2 TestFile TestFile TestDir
+echo "" 
+echo "${VarsArrayName[@]}"
+echo "" 
+echo "${FilesArrayName[@]}"
 
 # Calling the main function and passing all input arguments to it
-var_file_collection__vars_files_array "$@"
+#var_file_collection__vars_files_array "$@"
 
 # End of script

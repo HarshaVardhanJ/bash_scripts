@@ -164,6 +164,50 @@ function log_to_file() {
 
 # (WORKS)
 #
+# Function that gets rid of any duplicates in the arguments passed, if any.
+# The duplicate arguments are removed and only the unique ones are printed \
+# to the output.
+#
+# Function input  : Var3 Var1 Var2 Var2 Var3 Var1 Var3
+# Function output : Var1 Var2 Var3 (could be in a different order)
+#
+function remove_duplicate_args() {
+
+	# Local array to store input arguments
+	local -n argArrayName="argArray"
+
+	# If the number of arguments is > 0
+	if [[ $# -gt 0 ]] ; then
+		# For a list of given arguments
+		for ARGUMENT in "$@" ; do
+			# If the argument is not an empty string
+			if [[ -n "${ARGUMENT}" ]] ; then
+				# Adding the argument to the array
+				argArrayName+=("${ARGUMENT}")
+			# If the argument is an empty string
+			else
+				print_err -e 1 -s "Empty string received."
+			fi
+		done
+
+		# If the number of elements in the argument array > 0
+		if [[ "${#argArrayName[@]}" -gt 0 ]] ; then
+			# Print all the elements of the array and sort the unique values \
+			# using 'sort -u', and add them back to the array \
+			# AND then print the array to standard output
+			argArrayName=($(printf '%s\n' "${argArrayName[@]}" | sort -u)) \
+				&& printf '%s ' "${argArrayName[@]}"
+		fi
+	# If no arguments have been received
+	else
+		print_err -e 1 -s "No arguments received."
+	fi
+
+}
+
+
+# (WORKS)
+#
 # Function that generates an 'import status' variable. Setting this variable helps \
 # serve as a check against importing the same file multiple times. This also prevents \
 # recursive importing, which can happen when one script imports another script that \
@@ -236,8 +280,9 @@ function set_import_status() {
 	# and setting its value to 1 which indicates that it has been imported, AND \
 	# adding the variable to the collection array which keeps track of all global \
 	# variables
-	declare -gx "${tempImportVarName}"=1 \
-		&& var_file_collection__vars_files_array "${tempImportVarName}"
+	declare -gx "${tempImportVarName}"=1
+	#declare -gx "${tempImportVarName}"=1 \
+	#	&& var_file_collection__vars_files_array "${tempImportVarName}"
 
 }
 
@@ -311,8 +356,8 @@ importFiles=(
 # Seems to result in recursive importing of files as the 'var_file_collection' file already \
 # has a `source ./general_functions.sh` command.
 # Importing the files defined in the 'importFiles' array
-import_files "${importFiles[@]}"
+#import_files "${importFiles[@]}"
 
-#var_file_collection_vars_files_array logFile
+
 
 # End of script
