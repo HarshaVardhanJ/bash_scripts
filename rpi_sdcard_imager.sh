@@ -15,7 +15,7 @@ function finish
     do
         if [[ -e "${FILE}" ]]
         then
-            cd "$( dirname "${FILE}" )" && rm -v "$( basename "${FILE}" )"
+            cd "$( dirname "${FILE}" )" && rm -iv "$( basename "${FILE}" )"
         fi
     done
 }

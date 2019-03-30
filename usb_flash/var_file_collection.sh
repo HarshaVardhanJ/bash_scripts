@@ -475,7 +475,7 @@ function var_file_collection__add_to_array() {
 #     3. Unsets all variables stored in VarsArray and
 #        deletes all files stored as variables in FilesArray
 #
-# This function uses five other modules, namely
+# This function uses six other modules, namely
 #                 1. array_creation
 #                      This module creates the arrays that are
 #                      used to store global variables and variables
@@ -488,7 +488,7 @@ function var_file_collection__add_to_array() {
 #                      unique ones. This function is present in the
 #                      'general_functions.sh'.
 #
-#                 2. present_in_array
+#                 3. present_in_array
 #                      This module checks if the input arguments are
 #                      present in any of the pre-defined arrays. If
 #                      they are not, the argument is printed out.
@@ -499,16 +499,16 @@ function var_file_collection__add_to_array() {
 #                      basically for checking if a variable has been
 #                      added to either of the arrays previously.
 #
-#                 3. add_to_array
+#                 4. add_to_array
 #                      This module adds the input argument, provided
 #                      it is either a global variables, or a variable
 #                      that points to a file/folder, to the appropriate
 #                      array.
 #
-#                 4. print_arrays
+#                 5. print_arrays
 #                      Prints the arrays, if they are populated.
 #
-#                 5. delete_arrays
+#                 6. delete_arrays
 #                      Unsets all variables in the array that stores
 #                      variables, and deletes all files and folders
 #                      that the script has created. Used for cleanup
