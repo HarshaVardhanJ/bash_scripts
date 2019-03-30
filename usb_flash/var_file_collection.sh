@@ -458,8 +458,6 @@ function var_file_collection__add_to_array() {
     # Call the 'initialise_array' module AND then call the 'vars_files_array' module again and \
     # pass all the input arguments to it. The 'vars_files_array' module takes care of calling the \
     # 'present_in_array' module. It does not need to be called separately.
-    #var_file_collection__initialise_array \
-    #  && var_file_collection__add_to_array "$@"
     var_file_collection__initialise_array \
       && var_file_collection__vars_files_array "$@"
   fi
@@ -483,6 +481,12 @@ function var_file_collection__add_to_array() {
 #                      used to store global variables and variables
 #                      that point to files/folders. This module is
 #                      called by the 'add_to_array' module.
+#
+#                 2. remove_duplicate_args
+#                      This function removes any duplicates arguments
+#                      from the input, if any, and prints out only the
+#                      unique ones. This function is present in the
+#                      'general_functions.sh'.
 #
 #                 2. present_in_array
 #                      This module checks if the input arguments are
@@ -632,9 +636,13 @@ function var_file_collection__vars_files_array() {
 
   # If the number of arguments >= 1, and if the 'FlagVar' variable has not been set
   elif [[ $# -ge 1 && ! -v FlagVar ]] ; then
-    # Calling the 'present_in_array' module and passing all input arguments to it.
+    # Calling the 'remove_duplicate_args' function and passing input arguments to it. \
+    # A list of all unique arguments are returned, which are saved in 'tempArray'.
+    #
+    # Calling the 'present_in_array' module and passing elements of 'tempArray' to it. \
     # The output of this module(except the errors) is added to an array(tempArray).
-    tempArray=($(var_file_collection__present_in_array "$@" 2>/dev/null))
+    tempArray=($(remove_duplicate_args "$@" 2>/dev/null))
+    tempArray=($(var_file_collection__present_in_array "${tempArray[@]}" 2>/dev/null))
 
     # The above command that adds the unique variables to a temporary array could be \
     # replaced by the mapfile command, as per the recommendation from 'shellcheck'
@@ -655,38 +663,6 @@ function var_file_collection__vars_files_array() {
     print_err -e 1 -s "Argument(s) received : \"$*\". Does not match any of the conditions."
   fi
 }
-
-############################ The lines below are used for testing purposes only.
-############################ Remove them when done with testing the script. Or
-############################ comment them out.
-
-# Declaring a few variables and files for testing purposes
-declare -a TestVar2=(1 2 3 4 5)
-declare -n refVar=TestVar
-declare -i TestVar=1
-declare TestFile="/Users/harshavardhanj/Desktop/testfile"
-declare TestDir="/Users/harshavardhanj/Desktop/testdir"
-
-# Adding variables in order to populate the arrays with values
-# Used for testing purposes. Remove the below line when not needed.
-# The 'present_in_array' module is supposed to return only unique variable names. But \
-# repeated variable names are being added to the array regardless. Check what the issue \
-# could be. ******************************
-#
-# The 'vars_files_array' module is adding multiple variables to the array because, initially, \
-# all the variables are being passed to the 'present_in_array' module at once. As in beginning \
-# there are no elements in the arrays, these variables are added without checking for duplicates. \
-# The check is only successful after the array has been populated. So, to fix this, a check could \
-# be implemented where the arguments are checked for duplicate values. This way, many of the same \
-# arguments cannot to be added to an empty array. 
-#
-# Add a module/conditional block that verifies if each of the arguments passed are unique. ******
-var_file_collection__vars_files_array refVar TestFile TestVar TestVar TestDir TestVar2 TestFile TestDir
-var_file_collection__present_in_array TestDir refVar TestVar TestVar2 TestFile TestFile TestDir
-echo "" 
-echo "${VarsArrayName[@]}"
-echo "" 
-echo "${FilesArrayName[@]}"
 
 # Calling the main function and passing all input arguments to it
 #var_file_collection__vars_files_array "$@"

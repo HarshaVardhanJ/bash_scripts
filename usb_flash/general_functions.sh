@@ -358,6 +358,4 @@ importFiles=(
 # Importing the files defined in the 'importFiles' array
 #import_files "${importFiles[@]}"
 
-
-
 # End of script
