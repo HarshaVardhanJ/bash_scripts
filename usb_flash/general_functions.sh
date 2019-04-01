@@ -16,6 +16,8 @@
 #                 script.
 ################
 
+# Exit when a command fails and returns a non-zero exit code
+set -e
 
 # (WORKS)
 #
@@ -126,6 +128,7 @@ function log_to_file() {
 	# Local variable that stores argument for initialising
 	# the log file
 	local initArg
+	initArg="init"
 
 	# Global variable that stores path to log file
 	declare -gx logFile
@@ -135,19 +138,17 @@ function log_to_file() {
 	# which can be unset during the cleanup step.
 	#var_file_collection__vars_files_array logFile
 
-	initArg="init"
-	
 	# If the first argument matches the string defined in 'initArg'
-	if [[ $# -eq 2 && "$1" == "${initArg}" ]] ; then
-		# If the directory of the file defined by the second argument exists \
-		# and if the file defined by the second argument does not exist
+	if [[ $# -eq 2 && "$1" = "${initArg}" ]] ; then
+		# If the parent directory of the file defined by the second argument \
+		# exists and if the file defined by the second argument does not exist
 		if [[ -d "$( dirname "$2" )" && ! -f "$2" ]] ; then
 			touch "$2" \
 				&& logFile=$(readlink -f "$2")
 		# If either the parent directory of the file does not exist, or if the file \
-		# defined by the $2 exists
+		# defined by the second argument exists
 		else
-			print_err -e 1 -s "Either \"$(dirname "$1")\" does not exist, or the file \"$2\" exists."
+			(print_err -e 1 -s "Either \"$(dirname "$2")\" does not exist, or the file \"$2\" exists.")
 		fi
 	# If the number of arguments = 1, and if the first argument is not an empty string, \
 	# and if the 'logFile' variable is set

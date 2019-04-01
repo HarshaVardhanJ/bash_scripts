@@ -60,6 +60,8 @@
 #                 of all arguments that the function accepts.
 ################
 
+# Exit when a command fails and returns a non-zero exit code
+set -e
 
 # Importing the 'general_functions.sh' script
 # Contains functions that will be used in this script
@@ -641,11 +643,13 @@ function var_file_collection__vars_files_array() {
     #
     # Calling the 'present_in_array' module and passing elements of 'tempArray' to it. \
     # The output of this module(except the errors) is added to an array(tempArray).
-    tempArray=($(remove_duplicate_args "$@" 2>/dev/null))
-    tempArray=($(var_file_collection__present_in_array "${tempArray[@]}" 2>/dev/null))
+    #tempArray=($(remove_duplicate_args "$@" 2>/dev/null))
+    #tempArray=($(var_file_collection__present_in_array "${tempArray[@]}" 2>/dev/null))
+    #
+    # Have replaced the above two commands with the help of the 'mapfile' utility
+    mapfile -d ' ' -t tempArray < <(remove_duplicate_args "$@" 2>/dev/null)
+    mapfile -d ' ' -t tempArray < <(var_file_collection__present_in_array "${tempArray[@]}" 2>/dev/null)
 
-    # The above command that adds the unique variables to a temporary array could be \
-    # replaced by the mapfile command, as per the recommendation from 'shellcheck'
 
     # If the temporary array has more than 0 elements
     if [[ "${#tempArray[@]}" -gt 0 ]] ; then
@@ -656,7 +660,6 @@ function var_file_collection__vars_files_array() {
     else
       print_err -e 1 -s "No output from the 'present_in_array' module. Input already exists in array."
     fi
-  
 
   # If the input argument(s) does not match any of the previous conditions
   else
@@ -664,7 +667,15 @@ function var_file_collection__vars_files_array() {
   fi
 }
 
-# Calling the main function and passing all input arguments to it
-#var_file_collection__vars_files_array "$@"
+# This file isn't meant to be executed. It is preferable to unset the 'execute' bit on this file.
+# Due to how multiple scripts are sourcing other scripts, namely the 'general_functions.sh' file \
+# sourcing this file, and this file sourcing the 'general_functions.sh' file, there seems to be \
+# some mix up in the arguments. This file, when it has a line that ingests all input arguments, \
+# for example, `var_file_collection__vars_files_array "$@"`, some of the arguments from the \
+# 'general_functions.sh' file are being ingested by this file. Unsure of why this is happening.
+# To solve this, and to also solve the issue of circular dependencies, it is better to unset the \
+# execute bit on all scripts that do not absolutely need it. This way, when a certain file is \
+# imported/sourced, the commands in it aren't executed. Ideally, only the file/script that is \
+# responsible for handling user input would have the execute bit set.
 
 # End of script

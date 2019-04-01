@@ -15,6 +15,9 @@
 #                 as it will be imported by other functions.
 ################
 
+# Exit when a command fails and returns a non-zero exit code
+set -e
+
 # Importing the 'general_functions.sh' script
 source ./general_functions.sh
 

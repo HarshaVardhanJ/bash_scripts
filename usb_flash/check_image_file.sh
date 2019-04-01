@@ -13,9 +13,12 @@
 #                 are any spaces in the file/directory names, escape them
 #                 with a backslash.
 #: Usage        :	Call the script with the image file as an argument
-#                     ./get_image_file.sh /path/to/image/file
-#                     ./get_image_file.sh ../relative/path/to/image/file
+#                     ./check_image_file.sh /path/to/image/file
+#                     ./check_image_file.sh ../relative/path/to/image/file
 ################
+
+# Exit when a command fails and returns a non-zero exit code
+set -e
 
 # Importing the 'general_functions.sh' file
 source ./general_functions.sh

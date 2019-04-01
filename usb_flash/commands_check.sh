@@ -38,7 +38,8 @@
 #                     where CommandArray=("command-1" "command-2")
 ################
 
-#source ./general_functions.sh
+# Exit when a command fails and returns a non-zero exit code
+set -e
 
 # script_name CommandArray
 #   where CommandArray=("whoami" "date" "time")
@@ -92,22 +93,22 @@ function command_check__check_input() {
     # If number of arguments > 1
     else
       # For each argument given
-      for Variable in "$@" ; do
-        # If $Variable is not an array
-        if [[ ! $(declare -p "${Variable}" 2>/dev/null) =~ "${ArraySignature}" ]] ; then
-          # If $Variable does not contain an empty string
-          if [[ -n "${Variable}" ]] ; then
+      for ARGUMENT in "$@" ; do
+        # If $ARGUMENT is not an array
+        if [[ ! $(declare -p "${ARGUMENT}" 2>/dev/null) =~ "${ArraySignature}" ]] ; then
+          # If $ARGUMENT is not an empty string
+          if [[ -n "${ARGUMENT}" ]] ; then
             # Add it to the array containing a list of all commands
-            CommandArray+=("${Variable}")
-          # If $Variable contains an empty string
+            CommandArray+=("${ARGUMENT}")
+          # If $ARGUMENT is an empty string
           else
             printf '%s\n' "An empty argument has been passed." \
               && return 1
           fi
 
-        # If $Variable is an array
+        # If $ARGUMENT is an array
         else
-          prinf '%s\n' "The argument \"${Variable}\" is an array. If you wish \
+          prinf '%s\n' "The argument \"${ARGUMENT}\" is an array. If you wish \
             to pass an array, pass only the array as an argument." \
             && return 1
         fi
