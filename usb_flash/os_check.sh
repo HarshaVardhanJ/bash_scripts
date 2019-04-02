@@ -28,12 +28,9 @@ source ./general_functions.sh
 #
 function os_check() {
 
-  # Associative array
-  local -A OsArray
-
-  # Local variable to store output of command
-  # that returns info about OS
-  local OsCheckMethod
+  # Associative array for storing values related \
+  # to OS types
+  local -A OsArray_Uname OsArray_OsType
 
   # Adding OS key-value pairs
   # The key is the output from the command used
@@ -41,34 +38,61 @@ function os_check() {
   # The value is the customised name for use in
   # other scripts.
   # ["'uname -o' output"]="customised name"
-  OsArray=(\
+  OsArray_Uname=(\
   ["Linux"]="Linux" \
   ["Darwin"]="Mac" \
+  )
+
+  # Adding OS key-value pairs
+  # The key is the output from the OSTYPE variable \
+  # used to check OS type.
+  # The value is the customised name for use in
+  # other scripts.
+  # ["'OSTYPE' output"]="customised name"
+  OsArray_OsType=(\
+  ["gnu-linux"]="Linux" \
+  ["darwin"]="Mac" \
   )
 
   # Variable that stores the result of the command used for \
   # obtaining info about OS
   # Can be changed if necessary
-  local OsCheckCommand
+  local -a OsCheckCommand
   OsCheckCommand="$(uname -o)"
 
-  # for Key in 'OsArray' keys (key-value pairs in associative array)
-  for Key in "${!OsArray[@]}" ; do
-    # If the OS check command returns a value that matches any of the \
-    # keys of the associative array 'OsArray'
-    if [[ "${OsCheckCommand}" == "${Key}" ]] ; then
-      # Print 'value' of the OsArray corresponding to the matching key \
-      # and break out of the 'for' loop
-      printf '%s\n' "${OsArray["${Key}"]}" \
-        && break
-    else
-      print_err -e 1 -s "Operating system type not in list. Check 'os_check' function."
-    fi
-  done
+  # If the 'OSTYPE' shell variable has been set
+  if [[ -v OSTYPE ]] ; then
+    # for Key in 'OsArray' keys (key-value pairs in associative array)
+    for Key in "${!OsArray_OsType[@]}" ; do
+      # If the OSTYPE variable returns a value that matches any of the \
+      # keys of the associative array 'OsArray_OsType'
+      if [[ "${OSTYPE}" =~ ${Key} ]] ; then
+        printf '%s\n' "${OsArray_OsType["${Key}"]}" \
+          && break
+      else
+        print_err -e 1 -s "Operating system type not in list. Check 'os_check' function."
+      fi
+    done
+  # If the 'OSTYPE' shell variable has not been set  
+  else
+    # for Key in 'OsArray' keys (key-value pairs in associative array)
+    for Key in "${!OsArray_Uname[@]}" ; do
+      # If the OS check command returns a value that matches any of the \
+      # keys of the associative array 'OsArray'
+      if [[ "${OsCheckCommand}" = "${Key}" ]] ; then
+        # Print 'value' of the OsArray corresponding to the matching key \
+        # and break out of the 'for' loop
+        printf '%s\n' "${OsArray["${Key}"]}" \
+          && break
+      else
+        print_err -e 1 -s "Operating system type not in list. Check 'os_check' function."
+      fi
+    done
+  fi
 
 }
 
 # Calling the main function
-#os_check
+os_check
 
 # End of script
