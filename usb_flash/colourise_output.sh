@@ -197,6 +197,9 @@ function colourise() {
 }
 
 # Calling the 'colourise' function and passing all arguments to it
-colourise "$@"
+#colourise "$@"
+
+# This script does not need to have the execute bit set as it will be imported by the other scripts
+# that will make use of the functions within this script.
 
 # End of script
