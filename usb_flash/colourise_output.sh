@@ -113,7 +113,8 @@ function colourise() {
 						shift 2             	# Shift the first two arguments away : "--colour red" have been shifted away
 					# If the second argument does not contain any of the defined colours
 					else
-						colourise -c red -s "Incorrect colour option" -e 1
+						colourise -c red -s "${FUNCNAME}" -c yellow -s "${LINENO}" -c white -s \
+							"Incorrect colour option" -e 1
 						print_help \
 							&& return 1
 					fi
@@ -126,7 +127,8 @@ function colourise() {
 						shift 2          	# Shift two arguments away: "--string "example"" have been shifted away
 					# If the string provided is empty, print help text and exit
 					else
-						colourise -c red -s "Empty string provided. Check help text below" -e 1
+						colourise -c red -s "${FUNCNAME}" -c yellow -s "${LINENO}" -c white -s \
+							"Empty string provided. Check help text below" -e 1
 						print_help \
 							&& return 1
 					fi
@@ -139,7 +141,8 @@ function colourise() {
 						shift 2 		# Shift two arguments away "--error 1" have been shifted away
 					# If the argument does not match either '1' or '0', print help test and exit
 					else
-						colourise -c red -s "Incorrect value provided for '-e' flag. Check help text below" -e 1
+						colourise -c red -s "${FUNCNAME}" -c yellow -s "${LINENO}"-c white -s \
+							"Incorrect value provided for '-e' flag. Check help text below" -e 1
 						print_help \
 							&& return 1
 					fi
@@ -169,35 +172,28 @@ function colourise() {
 				for ARGS in $( seq 0 1 $(( ${#StringVar[@]} - 1 )) ) ; do
 					printf '%s ' "${!ColourVar["${ARGS}"]}" "${StringVar["${ARGS}"]}" >&2
 				done
-
-				# Reset any colour modifications done previously. This is done to prevent the \
-				# colouring of any text not printed by this function.
-				# Also, print a new line after all the text has been printed. If this is not \
-				# done, further usage of this function will print all text on the same line as \
-				# the previous function call
-				printf '%s\n' "${RESET}"
 			;;
 			# If the ERROR variable is set to 0, print the colourised text to stdout
 			0|*)
 				for ARGS in $( seq 0 1 $(( ${#StringVar[@]} - 1 )) ) ; do
 					printf '%s ' "${!ColourVar["${ARGS}"]}" "${StringVar["${ARGS}"]}"
 				done
-
-				# Reset any colour modifications done previously. This is done to prevent the \
-				# colouring of any text not printed by this function.
-				# Also, print a new line after all the text has been printed. If this is not \
-				# done, further usage of this function will print all text on the same line as \
-				# the previous function call
-				printf '%s\n' "${RESET}"
 			;;
 		esac
 
+		# Reset any colour modifications done previously. This is done to prevent the \
+		# colouring of any text not printed by this function.
+		# Also, print a new line after all the text has been printed. If this is not \
+		# done, further usage of this function will print all text on the same line as \
+		# the previous function call
+		printf '%s\n' "${RESET}"
+
 	# If number of arguments is not even and are not greater than 4, print help text and exit
 	else
-		#printf '%s\n' "Number of arguments provided = $#"
-		#printf '%s\n' "Number of arguments required = 4(atleast)"
-		colourise -c red -s "Number of arguments provided = $#" -e 1
-		colourise -c red -s "Number of arguments required = 4(atleast)" -e 1
+		colourise -c red -s "${FUNCNAME}" -c yellow -s "${LINENO}" -c white -s \
+			"Number of arguments provided = $#" -e 1
+		colourise -c red -s "${FUNCNAME}" -c yellow -s "${LINENO}" -c white -s \
+			"Number of arguments required = 4(atleast)" -e 1
 		print_help \
 		 && return 1
 	fi
