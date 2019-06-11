@@ -4,11 +4,13 @@
 #: Date         :   18-Aug-2018
 #: Author       :   "Harsha Vardhan J" <vardhanharshaj@gmail.com>
 #: Version      :   3.0 (Stable)
-#: Description  :   This script contains a function which
-#                	helps colourise any string(s).
+#: Description  :   This script contains a function which helps colourise any string(s).
+#                   The script can also direct the coloured text to standard error.
 #: Options      :   Requires four arguments, at least. First one is the '--colour' option,
 #                   second is the colour name, third is the '--string' option, fourth is 
-#                   the string to be printed.
+#                   the string to be printed. Accepts an optional argument '--error',
+#                   when given the value of '1' will print the coloured text to standard
+#                   error. By default, it prints the text to standard error.
 #: Usage        :   The colour of the text is to be passed as an argument
 #                   to the '--colour' option. '--color' and '-c' are acceptable too. The 
 #                   text to be printed is passed as an argument to the '--string' option.
@@ -30,8 +32,6 @@
 function print_help() {
 	cat <<- EOF
 
-Incorrect usage
-
 Usage            :          $0 --colour colour --string "Text to be coloured"
                             $0 --color color --string "Text to be coloured"
                             $0 --color color --string "Text to be coloured" -c color -s "Text to be coloured"
@@ -48,9 +48,9 @@ Error Flag       :          Can be set to 1 if the text is to be printed to stan
 Note             :          All strings will be printed followed by a space. You do not need to add spaces between multiple strings
                             The strings should not be empty.
 
-							The script accepts '--colour', '--color', and '-c' as flags for the colour(s)
-							The script accepts '--string' and '-s' as flags for the string(s)
-							The script accepts '--error' and '-e' as flags for printing to standard error
+                            The script accepts '--colour', '--color', and '-c' as flags for the colour(s)
+                            The script accepts '--string' and '-s' as flags for the string(s)
+                            The script accepts '--error' and '-e' as flags for printing to standard error
 
 EOF
 }
@@ -109,11 +109,10 @@ function colourise() {
 					# If the second argument contains one of the colours defined,
 					# add the accompanying argument to variable $COLOUR
 					if [[ "$2" =~ ^(blue|cyan|green|orange|purple|red|violet|white|yellow)$ ]] ; then
-						ColourVar+=("${2^^}")  # Add colour to $ColourVar array and change colour name to uppercase
-						shift 2             # Shift the first two arguments away : "--colour red" have been shifted away
+						ColourVar+=("${2^^}")	# Add colour to $ColourVar array and change colour name to uppercase
+						shift 2             	# Shift the first two arguments away : "--colour red" have been shifted away
 					# If the second argument does not contain any of the defined colours
 					else
-						#printf '%s\n' "Incorrect colour option"
 						colourise -c red -s "Incorrect colour option" -e 1
 						print_help \
 							&& return 1
@@ -123,11 +122,10 @@ function colourise() {
 				--string|-s)
 					# If the string in the second argument is not empty
 					if [[ -n "$2" ]] ; then
-						StringVar+=("$2")   # Add string to $StringVar array
+						StringVar+=("$2")	# Add string to $StringVar array
 						shift 2          	# Shift two arguments away: "--string "example"" have been shifted away
 					# If the string provided is empty, print help text and exit
 					else
-						#printf '%s\n' "Empty string provided. Check help text below"
 						colourise -c red -s "Empty string provided. Check help text below" -e 1
 						print_help \
 							&& return 1
@@ -141,7 +139,6 @@ function colourise() {
 						shift 2 		# Shift two arguments away "--error 1" have been shifted away
 					# If the argument does not match either '1' or '0', print help test and exit
 					else
-						#printf '%s\n' "Incorrect value provided for '-e' flag. Check help text below"
 						colourise -c red -s "Incorrect value provided for '-e' flag. Check help text below" -e 1
 						print_help \
 							&& return 1
@@ -172,12 +169,26 @@ function colourise() {
 				for ARGS in $( seq 0 1 $(( ${#StringVar[@]} - 1 )) ) ; do
 					printf '%s ' "${!ColourVar["${ARGS}"]}" "${StringVar["${ARGS}"]}" >&2
 				done
+
+				# Reset any colour modifications done previously. This is done to prevent the \
+				# colouring of any text not printed by this function.
+				# Also, print a new line after all the text has been printed. If this is not \
+				# done, further usage of this function will print all text on the same line as \
+				# the previous function call
+				printf '%s\n' "${RESET}"
 			;;
 			# If the ERROR variable is set to 0, print the colourised text to stdout
 			0|*)
 				for ARGS in $( seq 0 1 $(( ${#StringVar[@]} - 1 )) ) ; do
 					printf '%s ' "${!ColourVar["${ARGS}"]}" "${StringVar["${ARGS}"]}"
 				done
+
+				# Reset any colour modifications done previously. This is done to prevent the \
+				# colouring of any text not printed by this function.
+				# Also, print a new line after all the text has been printed. If this is not \
+				# done, further usage of this function will print all text on the same line as \
+				# the previous function call
+				printf '%s\n' "${RESET}"
 			;;
 		esac
 
@@ -198,5 +209,8 @@ function colourise() {
 
 # Calling the 'colourise' function and passing all arguments to it
 colourise "$@"
+
+# This script does not need to have the execute bit set as it will be imported by the other scripts
+# that will make use of the functions within this script.
 
 # End of script
