@@ -10,7 +10,10 @@
 #                   second is the colour name, third is the '--string' option, fourth is 
 #                   the string to be printed. Accepts an optional argument '--error',
 #                   when given the value of '1' will print the coloured text to standard
-#                   error. By default, it prints the text to standard error.
+#                   error. By default, it prints the text to standard error. Another optional
+#                   argument is the '--newline' or '-n' option, which when given the value of
+#                   '0' will not print a new line after the text. The default behaviour is to
+#                   print a new line after every function call.
 #: Usage        :   The colour of the text is to be passed as an argument
 #                   to the '--colour' option. '--color' and '-c' are acceptable too. The 
 #                   text to be printed is passed as an argument to the '--string' option.
@@ -19,12 +22,15 @@
 #                   option can be case-insensitive too. Multiple strings with different 
 #                   colours can be passed too. Also, text can be printed to standard error
 #                   by setting the '--error' flag to '1'. By default, all text is printed
-#                   to standard output.
+#                   to standard output. Finally, the default behaviour of printing a new
+#                   line after every function call can be overriden by passing the value of
+#                   '0' to the '--newline' or '-n' flag.
 #                   Example:    ./colourise_output.sh --colour blue --string "Text in blue"
 #                               ./colourise_output.sh --color BlUe --string "Text in blue"
 #                               ./colourise_output.sh --colour red --string "Red text" \
 #                                                     -c blue -s "Blue text"
 #                               ./colourise_output.sh -c red -s "Print to stderr" -e 1
+#                               ./colourise_output.sh -c red -s "Print to stderr" -n 0
 ################
 
 # Function that prints some text intended to inform the user
@@ -37,20 +43,29 @@ Usage            :          $0 --colour colour --string "Text to be coloured"
                             $0 --color color --string "Text to be coloured" -c color -s "Text to be coloured"
                             $0 --colour colour --string "Text to be coloured" --error 0
                             $0 --colour colour --string "Text to be coloured" -e 1
+                            $0 --colour colour --string "Text to be coloured" -e 1 --newline 0
+                            $0 --colour colour --string "Text to be coloured" -n 1
 
 Colours Accepted :          blue, cyan, green, orange, purple, red, violet, white, yellow
 
 Error Flag       :          Can be set to 1 if the text is to be printed to standard error.
                             By default, text will be printed to standard output.
                             Accepts only 1 and 0 as values. The value 0 is the default value.
-                            '--error 1' will print the text to standard error
+                            '--error 1' or '-e 1' will print the text to standard error.
 
-Note             :          All strings will be printed followed by a space. You do not need to add spaces between multiple strings
-                            The strings should not be empty.
+Newline Flag     :          Can be set to 0 if no newline is to be printed at the end. By default,
+                            newlines are printed after every function call so that the text printed
+														by the next function call isn't on the same line. This can be overriden
+														if needed by passing '--newline 0' or '-n 0'.
+
+Note             :          All strings will be printed followed by a space. You do not need to add 
+                            spaces between multiple strings. The strings should not be empty.
 
                             The script accepts '--colour', '--color', and '-c' as flags for the colour(s)
                             The script accepts '--string' and '-s' as flags for the string(s)
                             The script accepts '--error' and '-e' as flags for printing to standard error
+                            The script accepts '--newline' and '-n' as flags for controlling newline printing
+														behaviour.
 
 EOF
 }
@@ -100,6 +115,8 @@ function colourise() {
 		local -a StringVar
 		# Declaring local integer for storing value of ErrorVar flag
 		local -i ErrorVar
+		# Declaring local integer for storing value of NewlineVar flag
+		local -i NewlineVar
 
 		# While the number of arguments is > 0
 		while [[ $# -gt 0 ]] ; do
@@ -147,6 +164,20 @@ function colourise() {
 							&& return 1
 					fi
 				;;
+				# If the newline flag is set to 1, that is if a newline is to be printed at the end
+				--newline|-n)
+					# If the argument is either 1 or 0
+					if [[ $2 =~ ^[0-1]$ ]] ; then
+						NewlineVar=$2		# Assign the integer to the NewlineVar variable
+						shift 2 		# Shift two arguments away "--newline 1" have been shifted away
+					# If the argument does not match either '1' or '0', print help test and exit
+					else
+						colourise -c red -s "${FUNCNAME}" -c yellow -s "${LINENO}"-c white -s \
+							"Incorrect value provided for '-e' flag. Check help text below" -e 1
+						print_help \
+							&& return 1
+					fi
+				;;
 				# If any other argument is provided, then print help text and exit
 				*)
 					print_help \
@@ -173,7 +204,7 @@ function colourise() {
 					printf '%s ' "${!ColourVar["${ARGS}"]}" "${StringVar["${ARGS}"]}" >&2
 				done
 			;;
-			# If the ERROR variable is set to 0, print the colourised text to stdout
+			# If the ERROR variable is set to 0, print the colourised text to stdout (default behaviour)
 			0|*)
 				for ARGS in $( seq 0 1 $(( ${#StringVar[@]} - 1 )) ) ; do
 					printf '%s ' "${!ColourVar["${ARGS}"]}" "${StringVar["${ARGS}"]}"
@@ -186,7 +217,12 @@ function colourise() {
 		# Also, print a new line after all the text has been printed. If this is not \
 		# done, further usage of this function will print all text on the same line as \
 		# the previous function call
-		printf '%s\n' "${RESET}"
+		case $NewlineVar in
+			# If the NewlineVar is set to 0, don't print a newline
+			0) printf '%s' "${RESET}" ;;
+			# If the NewlineVar is set to 1, print a newline(default behaviour)
+			1|*) printf '%s\n' "${RESET}" ;;
+		esac
 
 	# If number of arguments is not even and are not greater than 4, print help text and exit
 	else
@@ -204,7 +240,7 @@ function colourise() {
 }
 
 # Calling the 'colourise' function and passing all arguments to it
-colourise "$@"
+#colourise "$@"
 
 # This script does not need to have the execute bit set as it will be imported by the other scripts
 # that will make use of the functions within this script.
