@@ -113,9 +113,9 @@ function colourise() {
 		# Declaring local arrays for storing colours and strings
 		local -a ColourVar
 		local -a StringVar
-		# Declaring local integer for storing value of ErrorVar flag
+		# Declaring local integer for storing value of '--error' flag
 		local -i ErrorVar
-		# Declaring local integer for storing value of NewlineVar flag
+		# Declaring local integer for storing value of '--newline' flag
 		local -i NewlineVar
 
 		# While the number of arguments is > 0
@@ -124,7 +124,7 @@ function colourise() {
 				# If "first" argument is either '--colour', '--color', or '-c'
 				--colour|--color|-c)
 					# If the second argument contains one of the colours defined,
-					# add the accompanying argument to variable $COLOUR
+					# add the accompanying argument to variable $ColourVar
 					if [[ "$2" =~ ^(blue|cyan|green|orange|purple|red|violet|white|yellow)$ ]] ; then
 						ColourVar+=("${2^^}")	# Add colour to $ColourVar array and change colour name to uppercase
 						shift 2             	# Shift the first two arguments away : "--colour red" have been shifted away
@@ -155,7 +155,7 @@ function colourise() {
 					# if the argument is either 1 or 0
 					if [[ $2 =~ ^[0-1]$ ]] ; then
 						ErrorVar=$2		# Assign the integer to the ErrorVar variable
-						shift 2 		# Shift two arguments away "--error 1" have been shifted away
+						shift 2				# Shift two arguments away "--error 1" have been shifted away
 					# If the argument does not match either '1' or '0', print help test and exit
 					else
 						colourise -c red -s "${FUNCNAME}" -c yellow -s "${LINENO}"-c white -s \
@@ -169,7 +169,7 @@ function colourise() {
 					# If the argument is either 1 or 0
 					if [[ $2 =~ ^[0-1]$ ]] ; then
 						NewlineVar=$2		# Assign the integer to the NewlineVar variable
-						shift 2 		# Shift two arguments away "--newline 1" have been shifted away
+						shift 2					# Shift two arguments away "--newline 1" have been shifted away
 					# If the argument does not match either '1' or '0', print help test and exit
 					else
 						colourise -c red -s "${FUNCNAME}" -c yellow -s "${LINENO}"-c white -s \
@@ -216,7 +216,8 @@ function colourise() {
 		# colouring of any text not printed by this function.
 		# Also, print a new line after all the text has been printed. If this is not \
 		# done, further usage of this function will print all text on the same line as \
-		# the previous function call
+		# the previous function call. This depends on whether the '--newline' flag has \
+		# been set to '0'. If it has, no newline will be printed.
 		case $NewlineVar in
 			# If the NewlineVar is set to 0, don't print a newline
 			0) printf '%s' "${RESET}" ;;
