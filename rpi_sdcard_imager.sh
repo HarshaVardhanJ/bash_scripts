@@ -777,14 +777,12 @@ then
                                             cat <<-EOF >"${WIFI_FILE}"
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
-
 network={
 	ssid="${SSID}"
 	key-mgmt=WPA2-PSK
-	psk="$( cat "${TEMP}" )"
+	psk="$( <"${TEMP}" )"
 }
 EOF
-
 											# Checking if 'wpa_supplicant.conf' file exists and is of non-zero size
 											if [[ -s "${WIFI_FILE}" ]]
 											then
