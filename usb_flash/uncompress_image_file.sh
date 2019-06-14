@@ -3,22 +3,16 @@
 #: Title        : uncompress_image_file.sh
 #: Date         : 07-Mar-2019
 #: Author       : "Harsha Vardhan J" <vardhanharshaj@gmail.com>
-#: Version      : 0.1
+#: Version      : 0.1 (Stable)
 #: Description  : This script checks if the image file is compressed.
-#                 If it is, the file uncompressed and the extracted
+#                 If it is, the file is uncompressed and the extracted
 #                 file(its absolute path) is returned as output.
 #                
 #: Options      : Requires a file as an argument.
-#: Usage		: Call the script with a file as an argument
+#: Usage        : Call the script with a file as an argument
 #                   ./uncompress_image_file.sh ../relative/file/path
 #                   ./uncompress_image_file.sh /absolute/file/path
 ################
-
-
-# Importing the 'get_image_file.sh' script.
-# The 'get_image_file__file_signature_check_method' function
-# is required in this script.
-source ./get_image_file.sh
 
 
 # Function that uncompresses image file if it's compressed
@@ -39,26 +33,26 @@ function uncompress_image_file() {
 			# and add the output to the 'compressedFile' variable
 			compressedFile="$(uncompress_image_file__compression_check "$1")"
 
-			# If the exit code of the previous command(the 'compression_check' function)
-			# not 1, that is if the command is successful
-			if [[ $? -ne 1 ]] ; then
+			# If the 'compressedFile' variable has been set and is not an empty string
+			if [[ -v compressedFile && -n "${compressedFile}" ]] ; then
 
 				# Calling function that picks the appropriate command to uncompress/extract
 				# the compressed file based on the compression/archive type
 				################# Uncompression Function #####################
+				uncompress_image_file__uncompression_function "${compressedFile}" \
+					|| print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 \
+							-s "Error returned by the 'uncompression_function' module."
 			
 			fi
     # If the file doesn't exist, or is of size zero, or is unreadable by the user which
     # the script is running as
 		else
-      printf '%s\n' "File \"$1\" either does not exist, is of zero-size,\
-        or is unreadable by the user \"$(whoami)\"." \
-        && return 1
+      print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "File \"$1\" either does not exist, is of zero-size, \
+or is unreadable by the user \"${USER}\"."
 		fi
 	# If number of arguments is not equal to 1
 	else
-		printf '%s\n' "Received $# arguments. Requires only 1." \
-			&& return 1
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "Received $# arguments. Requires only 1."
 	fi
 
 }
@@ -81,7 +75,8 @@ function uncompress_image_file__compression_check() {
 	# file. It needs to be viewed using the 'strings' command.
 	compressionTypeArray=("gzip compressed" "bzip2 compressed" \
 							"GNU tar archive" "RAR archive data" \
-							"Zip archive data" "7-zip archive data")
+							"Zip archive data" "7-zip archive data" \
+							"XZ compressed data")
 	
 	# If number of arguments = 1
 	if [[ $# -eq 1 ]] ; then
@@ -90,38 +85,117 @@ function uncompress_image_file__compression_check() {
 		if [[ -s "$1" && -r "$1" ]] ; then
 			# Calling function to get the file's signature and setting the result to
 			# the 'compressionType' variable
-			compressionType="$(get_image_file__file_signature_check_method "$1")"
+			compressionType="$(check_image_file__file_signature_check_method "$1")"
 
-			# If the exit code of the previous command is not 1,
-			# that is, if the function responsible for obtaining
-			# the file type was successful
-			if [[ $? -ne 1 ]] ; then
+			# If the 'compressionType' variable has been set, meaning
+			# if the 'signature_check_method' function returns a valid
+			# output
+			if [[ -v compressionType ]] ; then
 				# For a list of all compression types listed in the
 				# 'compressionTypeArray' array
-				for Variable in "${compressionTypeArray[@]}" ; do
+				for TYPE in "${compressionTypeArray[@]}" ; do
 					# If the 'compressionType' value matches any of the
 					# values in the 'compressionTypeArray' array
-					if [[ "${compressionType}" =~ "${Variable}" ]] ; then
+					if [[ "${compressionType}" =~ "${TYPE}" ]] ; then
 						# Print resolved symlinks or canonicalised file names \
 						# as per 'readlink' manpage
 						readlink -f "$1" \
 							&& break
-					else
-						return 1
 					fi
 				done
 			fi
 		# If the file doesn't exist, or is of zero size, or is unreadable by the user
 		# that the script is running as
 		else
-			printf '%s\n' "File \"$1\" either does not exist, is of zero-size,\
-			or is unreadable by the user \"$(whoami)\"." \
-				&& return 1
+			print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+			"File \"$1\" either does not exist, is of zero-size, or is unreadable by the user \"${USER}\"."
 		fi
 	# If number of arguments is not equal to 1
 	else
-		printf '%s\n' "$# arguments have been provided. Requires only 1." \
-			&& return 1
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+		"$# arguments have been provided. Requires only 1."
 	fi
 
 }
+
+
+# Function that uncompresses the image file, if it is compressed
+# Function input  : /path/to/compressed/file
+# Function output : /path/to/uncompressed/file
+function uncompress_image_file__uncompression_function() {
+
+	# Local variable to store path to compressed file
+	local compressedFile
+
+	# Local variable to store the extension of the compressed file
+	local fileExtension
+
+	# Local associative array that stores the compression types \
+	# as keys, and the decompression command as values
+	local -A uncompressionCommands
+
+	uncompressionCommands=(\
+		["gz"]="tar -xvzf" \
+		["zip"]="unzip" \
+		["bz2"]="tar -xvjf" \
+		["xz"]="xz -dk" \
+	)
+
+
+	# If number of arguments = 1, and if the argument is not an empty string
+	if [[ $# -eq 1 && -n "$1" ]] ; then
+		# Add the output of the 'compression_check' module to the 'compressedFile' variable
+		compressedFile="$(uncompress_image_file__compression_check "$1" 2>/dev/null)"
+	# If number of arguments != 1, and if the argument is an empty string
+	else
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+		"Incorrect argument. Received \"$@\"."
+	fi
+
+
+	# If the 'compressedFile' variable has been set
+	if [[ -v compressedFile ]] ; then
+		# Obtain the file extension using substring removal
+		# Take a look at bash hacker's wiki on substring removal \
+		# for more info
+		fileExtension="${compressedFile##*.}"
+
+		# For a list of all indices(keys) of the array
+		for EXTENSION in "${!uncompressionCommands[@]}" ; do
+			if [[ "${fileExtension}" = "${EXTENSION}" ]] ; then
+				# Uncompress the file using the command stored as \
+				# the value of the corresponding key
+				${uncompressionCommands["${EXTENSION}"]} "${compressedFile}" \
+					|| print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+						"Could not extract the file \"#${compressedFile}\"."
+			fi
+		done
+	# If the 'compressedFile' variable has not been set
+	else
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+		"File did not match list of compressed file types."
+	fi
+
+}
+
+
+# Main function that should be called
+function uncompress_image_file__main() {
+	# Local array for storing paths to file that are to \
+	# be imported
+	local -a importFiles
+	importFiles=( "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh" )
+
+	# Importing the 'general_functions.sh' script first
+	source "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh"
+
+	# Calling the 'import_files' function to help import scripts and prevent \
+	# recursive importing
+	import_files "${importFiles[@]}"
+}
+
+
+# Calling the main function
+uncompress_image_file__main
+
+# End of script
