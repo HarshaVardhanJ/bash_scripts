@@ -20,10 +20,9 @@
 # Exit when a command fails and returns a non-zero exit code
 set -e
 
-# Importing the 'general_functions.sh' file
-source ./general_functions.sh
 
-
+# (WORKS)
+#
 # Function that outputs the type of the file given as
 # input. Requires one argument, which is the absolute
 # or relative path to the file whose type is to be
@@ -59,6 +58,8 @@ function check_image_file__file_signature_check_method() {
 }
 
 
+# (WORKS)
+#
 # Function that checks the input to validate the file and check
 # if it matches any of the allowed signatures (iso,zip,etc).
 # If the file matches, the absolute path to the file is returned
@@ -122,7 +123,29 @@ function check_image_file__file_signature_match_check() {
 }
 
 
+# Main function that should be called
+function check_image_file__main() {
+  # Local array for storing paths to files that \
+  # need to be imported
+  local -a importFiles
+  importFiles=( "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh" )
+
+  # Import the 'general_functions.sh' file first
+  source "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh"
+
+  # Calling the 'import_files' function which helps import scripts and prevent recursive \
+  # importing
+  import_file "${importFiles[@]}"
+}
+
 # Calling the main function
-check_image_file__file_signature_match_check "$@"
+check_image_file__main
+
+
+# This file isn't meant to be executed. It is preferable to unset the 'execute' bit on this file.
+# To solve the issue of circular dependencies, it is better to unset the execute bit on all scripts \
+# that do not absolutely need it. This way, when a certain file is  imported/sourced, the commands \
+# in it aren't executed. Ideally, only the file/script that is responsible for handling user input \
+# would have the execute bit set.
 
 # End of script
