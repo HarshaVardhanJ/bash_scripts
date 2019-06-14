@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
 #: Title        : var_file_collection.sh
-#: Date         :	26-Jan-2019
-#: Author       :	"Harsha Vardhan J" <vardhanharshaj@gmail.com>
-#: Version      : 0.1 (Stable)
+#: Date         : 26-Jan-2019
+#: Author       : "Harsha Vardhan J" <vardhanharshaj@gmail.com>
+#: Version      : 1.0 (Stable)
 #: Description  : This module that has three uses
 #                 1. Variables/files can be passed to it as
 #                    arguments which will be stored in arrays.
@@ -37,6 +37,9 @@
 #                 'delall'   --> Unsets all variables stored, and
 #                                deletes all files/folders stored by
 #                                the function/script
+#                 'cleanup'  --> Unsets global nameref and the variables
+#                                that they point to, which were created
+#                                by the script
 #                 
 #: Usage        :	Call the module/script and pass the argument.
 #                 Examples
@@ -63,10 +66,6 @@
 # Exit when a command fails and returns a non-zero exit code
 set -e
 
-# Importing the 'general_functions.sh' script
-# Contains functions that will be used in this script
-source ./general_functions.sh
-
 
 # (WORKS)
 #
@@ -84,164 +83,20 @@ function var_file_collection__check_type() {
   # If file, then 'File'
   # If folder, then 'Folder'
   # If neither, then 'Unknown'
-  # If first argument is either a shell variable, a file,
-  # or a directory
+  #
+  # If first argument is either a folder, file, or a shell variable
   if [[ -d "${!1}" ]] ; then
     printf '%s\n' "Folder"
   elif [[ -a "${!1}" ]] ; then 
     printf '%s\n' "File"
-  elif [[ -v "${1}" ]] ; then
+  # The reason `declare -p` has been added is because if a variable \
+  # referring to an empty array is passed, it will fail the `-v` test.
+  # The `declare -p` test will catch that.
+  elif [[ -v "${1}" || $(declare -p "${1}" 2>/dev/null) ]] ; then
     printf '%s\n' "GlobalVariable"
   else
-    print_err -e 1 -s "Unknown"
+    print_err -e 1 -f "${FUNCNAME}" -l "${LINENO}" -s "Unknown"
   fi
-}
-
-
-# (WORKS)
-#
-# Function that prints the variable array and/or file array
-# depending on the input to the function
-# Function input  : FilesArray
-#                   VarsArray
-#                   Both the array names mentioned above can be
-#                   changed if required. The variables are set
-#                   during the 'Array Creation' stage of the 
-#                   'var_file_collection_vars_files_array' function
-# Function output : The appropriate array is expanded and printed
-function var_file_collection__print_arrays() {
-
-  # Local nameref variable
-  # Meaning any variable expansion on 'ArrayName' will be \
-  # performed on the variable it refers to.
-  # For example, if 'testVar'=1, creating a nameref variable \
-  # 'tempVar' and pointing it to 'testVar' will have the following \
-  # effect when 'tempVar' is expanded.
-  # testVar=1
-  # declare -n tempVar=testVar
-  # echo $tempVar
-  # Output = 1
-  # Check `man bash` for more information on namerefs
-  local -n ArrayName
-
-  # If number of arguments = 1, and the argument is not an empty string, and if the first \
-  # argument matches either of the variables that the namerefs 'VarsArrayName' and \
-  # 'FilesArrayName' point to
-  if [[ $# -eq 1 && -n "$1" && "$1" =~ "${!VarsArrayName}"|"${!FilesArrayName}" ]] ; then
-    # Assigning the first argument to the 'ArrayName' nameref variable
-    ArrayName="$1"
-    # If the array exists, and has at least one element
-    if [[ -v "${ArrayName}" && "${#ArrayName[@]}" -gt 0 ]] ; then
-      # Print the elements of the array
-      printf '%s\n' "${ArrayName[@]}"
-    # If the array either does not exist, or is empty
-    else
-      print_err -e 1 -s "\"${!ArrayName}\" is either empty or not initialised."
-    fi
-  # If number of arguments is not equal to 1, or is an empty string
-  else
-    print_err -e 1 -s "Incorrect number of arguments, or the input string is empty,\
-      or the argument did not match either of the arrays' names."
-  fi
-}
-
-
-# (WORKS)
-#
-# Function that deletes the variables in the variable array and/or 
-# the files in the files array, depending on the input to the function
-# Function input  : FilesArray
-#                 : VarsArray
-#                   Both the array names mentioned above can be
-#                   changed if required. The variables are set
-#                   during the 'Array Creation' stage of the 
-#                   'var_file_collection_vars_files_array' function
-# Function output : The appropriate array's elements are deleted. If it
-#                   is a variable, it is unset. If it is a file/folder
-#                   it is deleted.
-function var_file_collection__delete_arrays() {
-
-  # Local 'nameref' variable
-  local -n ArrayName
-
-  # If number of arguments = 1, and the argument is not an empty string
-  if [[ $# -eq 1 && -n "$1" && "$1" =~ "${!VarsArrayName}"|"${!FilesArrayName}" ]] ; then
-    # Assigning the argument to the nameref variable
-    ArrayName="$1"
-
-    # If the array exists and is non-empty
-    if [[ -v "${ArrayName}" && "${#ArrayName[@]}" -gt 0 ]] ; then
-      # If the variable that the first argument points to matches \
-      # either the array defined by the nameref variable 'VarsArrayName' \
-      # or 'FilesArrayName'.
-      # Using indirection on a nameref returns the name of the variable that \
-      # it refers to. Calling the nameref variable returns the value of the \
-      # variable that it refers to.
-      case "${!ArrayName}" in
-        "${!VarsArrayName}")
-          printf '%s\n' "Unsetting variables created by script."
-          # For a list of elements listed in the array defined by the 'ArrayName' \
-          # nameref variable
-          for VARIABLE in "${ArrayName[@]}" ; do
-            # If the variable does not match the signature of a nameref variable
-            if [[ ! $(declare -p "${VARIABLE}") =~ "declare -n" ]] ; then
-              # Unset the variable
-              unset -v "${VARIABLE}" \
-                || print_err -e 1 -s "\"${VARIABLE}\" might be a read-only variable"
-            # If VARIABLE is a 'nameref' variable
-            elif [[ $(declare -p "${VARIABLE}") =~ "declare -n" ]] ; then
-              # 'unset -v' will unset the variable that the nameref variable refers to, \
-              # and 'unset -n' will unset the nameref variable itself. Therefore, both the \
-              # nameref variable and the variable that it refers to will be unset.
-              # Unset the variable that the nameref refers to, then unset the nameref \
-              # variable itself.
-              unset -v "${VARIABLE}" \
-                && unset -n "${VARIABLE}" \
-                || print_err -e 1 -s "Could not unset the nameref variable \"${VARIABLE}\"."
-            fi
-          done
-          # Unset the variable that the nameref refers to, which is either \
-          # 'VarsArray' or 'FilesArray'. There is no need to unset the nameref \
-          # variable 'ArrayName' as it's a local variable whose scope is restricted to this \
-          # function only.
-          #
-          # Unsetting the 'ArrayName' nameref without the prefix '$' unsets the variable \
-          # that 'ArrayName' points to. If you try to unset '$ArrayName', you end up \
-          # expanding the variable that 'ArrayName' points to.
-          unset -v ArrayName \
-            || print_err -e 1 -s "Could not unset the nameref variable \"${ArrayName}\"."
-          # If the array is either empty, or does not exist
-        ;;
-        "${!FilesArrayName}")
-          printf '%s\n' "Deleting files created by script."
-          # For a list of variables in array defined by the nameref 'ArrayName'
-          for VARIABLE in "${ArrayName[@]}" ; do
-            # If the path defined by the value of the variable '$VARIABLE' is \
-            # either a file or a directory, delete them
-            if [[ -e "${!VARIABLE}" || -d "${!VARIABLE}" ]] ; then
-              rm -ri "${!VARIABLE}" \
-                || print_err -e 1 -s "Could not delete \"${VARIABLE}\"."
-            else
-              print_err -e 1 -s "\"${!VARIABLE}\" - not a file/directory."
-            fi
-          done
-          # Unset array associated with nameref variable
-          unset -v ArrayName \
-            || print_err -e 1 -s "Could not unset the variable \"${ArrayName}\"."
-        ;;
-      esac
-    # If the array either does not exist, or is empty
-    else
-      print_err -e 1 -s "\"${!ArrayName}\" is empty or uninitialised."
-    fi
-  # If number of arguments is not equal to 1, or is an empty string, or the input \
-  # argument does not match any of the variable names that the namerefs 'VarsArrayName' \
-  # and 'FilesArrayName' point to
-  else
-    print_err -e 1 -s "Incorrect number of arguments or empty string received. \
-      Or the argument did not match either of the array's names."
-  fi
-
 }
 
 
@@ -277,9 +132,6 @@ function var_file_collection__initialise_array() {
     declare -gxn VarsArrayName="VarsArray"
     declare -gxn FilesArrayName="FilesArray"
 
-    # Adding the above global nameref variables to the variable array
-    #var_file_collection__vars_files_array "VarsArrayName" "FilesArrayName"
-
     # For a given list of arrays, if they don't exist, create them.
     # Using indirection on a nameref variable will return the name \
     # of the variable that it refers to. Using variable expansion will \
@@ -289,12 +141,22 @@ function var_file_collection__initialise_array() {
     for VARIABLE in "${!VarsArrayName}" "${!FilesArrayName}" ; do
       # If $VARIABLE is not set, that is, if the arrays defined by $VARIABLE don't exist \
       # create them.
-      if [[ ! -v ${VARIABLE} ]] ; then
+      if [[ ! -v "${VARIABLE}" ]] ; then
         # Create global, exportable arrays defined by $VARIABLE
-        declare -gxa ${VARIABLE} \
-          || print_err -e 1 -s "Could not create variable \"${VARIABLE}\"."
+        declare -gxa "${VARIABLE}" \
+          || print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+            "Could not create variable \"${VARIABLE}\"."
       fi
     done
+
+    # Adding the above global nameref variables to the variable array
+    # EDIT :
+    # Don't add these namerefs to the arrays. Calling the `vars_files_array` \
+    # submodule with the `delvars` or `delall` argument will result in the \
+    # namerefs being deleted as well, if they're included in the VarsArray.
+    # So, except these two variables, every other variable can be added to the \
+    # appropriate arrays.
+    #var_file_collection__vars_files_array "VarsArrayName" "FilesArrayName"
   fi
 
 }
@@ -347,16 +209,20 @@ function var_file_collection__present_in_array() {
           fi
         done
 
+        # If $VARIABLE does not match any of the elements, the below statement will be run
         # Add the argument to the 'inputVarArray'
         inputVarArray+=("${VARIABLE}")
       # If the argument is an empty string
       else 
-        print_err -e 1 -s "Empty string received as argument."
+        print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "Empty string received as argument." \
+          && continue 1
       fi
     done
   # If less than 1 argument is provided
   else
-    print_err -e 1 -s "Insufficient number of arguments. Expects at least one."
+    print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+      "Insufficient number of arguments. Expects at least one." \
+        && exit 1
   fi
 
   # If the number of elements in the 'inputVarArray' array is > 0
@@ -364,7 +230,10 @@ function var_file_collection__present_in_array() {
     printf '%s ' "${inputVarArray[@]}"
   # If the array is empty
   else
-    print_err -e 1 -s "No elements found in 'inputVarArray' array."
+    #print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "No elements found in 'inputVarArray' array."
+    # Do nothing. An error does not need to printed here. No output indicates that the array is \
+    # empty. It is evident. The colon below asks bash to do nothing
+    :
   fi
 }
 
@@ -377,7 +246,7 @@ function var_file_collection__present_in_array() {
 # folders created by the script.
 #
 # Function input  : Any variable that needs to be kept track of for purposes of \
-#                   of cleanup post script completion.
+#                   cleanup post script completion.
 # Function output : None. Returns an error if the input argument has not been \
 #                   added to any of the arrays.
 #
@@ -397,8 +266,13 @@ function var_file_collection__add_to_array() {
   # For each argument given
   for VARIABLE in "$@" ; do
     # If the argument is not a valid shell variable
-    if [[ ! -v "${VARIABLE}" ]] ; then
-      print_err -e 1 -s "\"${VARIABLE}\" is not a valid shell variable."
+    # The second condition of the if-statement is to catch any namerefs.
+    # Any namerefs referring to an empty array will not trigger the `-v` \
+    # condition, but the `declare -p` condition will catch it.
+    if [[ ! -v "${VARIABLE}" && ! $(declare -p "${VARIABLE}" 2>/dev/null) ]] ; then
+      print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+        "\"${VARIABLE}\" is not a valid shell variable." \
+          && exit 1
     fi
   done
   
@@ -420,7 +294,7 @@ function var_file_collection__add_to_array() {
       # The print statement given below is only for troubleshooting/debugging \
       # purposes. It has to be removed when the script has been checked to be free \
       # of errors/bugs, and its behaviour is predictable for any(most) inputs
-      printf '%s\n' "${VarType}"
+      #printf '%s\n' "${VarType}"
 
       # Add the argument to the appropriate arrays
       case "${VarType}" in
@@ -444,7 +318,10 @@ function var_file_collection__add_to_array() {
         #"File"|"Folder") FilesArray+=("${VARIABLE}") ;;
         # If the argument is neither a global variable nor a variable pointing to a file \
         # or folder, print an error
-        *) print_err -e 1 -s "\"${VARIABLE}\" Unknown type" ;;
+        *) print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+            "\"${VARIABLE}\" Unknown type" \
+              && exit 1 
+        ;;
       esac
     done
 
@@ -463,6 +340,200 @@ function var_file_collection__add_to_array() {
     var_file_collection__initialise_array \
       && var_file_collection__vars_files_array "$@"
   fi
+}
+
+
+# (WORKS)
+#
+# Function that prints the variable array and/or file array
+# depending on the input to the function
+# Function input  : FilesArray
+#                   VarsArray
+#                   Both the array names mentioned above can be
+#                   changed if required. The variables are set
+#                   during the 'Array Creation' stage of the 
+#                   'var_file_collection_vars_files_array' function
+# Function output : The appropriate array is expanded and printed
+function var_file_collection__print_arrays() {
+
+  # Local nameref variable
+  # Meaning any variable expansion on 'ArrayName' will be \
+  # performed on the variable it refers to.
+  # For example, if 'testVar'=1, creating a nameref variable \
+  # 'tempVar' and pointing it to 'testVar' will have the following \
+  # effect when 'tempVar' is expanded.
+  # testVar=1
+  # declare -n tempVar=testVar
+  # echo $tempVar
+  # Output = 1
+  # Check `man bash` for more information on namerefs
+  local -n ArrayName
+
+  # If number of arguments = 1, and if the first argument matches either of the \
+  # variables that the namerefs 'VarsArrayName' and 'FilesArrayName' point to
+  if [[ $# -eq 1 && "$1" =~ "${!VarsArrayName}"|"${!FilesArrayName}" ]] ; then
+    # Assigning the first argument to the 'ArrayName' nameref variable
+    ArrayName="$1"
+    # If the array exists, and has at least one element
+    if [[ -v "${ArrayName}" && "${#ArrayName[@]}" -gt 0 ]] ; then
+      # Print the elements of the array
+      printf '%s\n' "${ArrayName[@]}"
+    # If the array either does not exist, or is empty
+    else
+      print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+        "\"${!ArrayName}\" is either empty or not initialised." \
+          && exit 1
+    fi
+  elif [[ $# -ne 1 ]] ; then
+    print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+      "Incorrect number of arguments. Expecting only one : "${!VarsArrayName}" or "${!FilesArrayName}"."
+  # If number of arguments is not equal to 1, or is an empty string
+  else
+    print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+      "Arrays are empty. Nothing to print."
+  fi
+}
+
+
+# (WORKS)
+#
+# Function that deletes the variables in the variable array and/or 
+# the files in the files array, depending on the input to the function
+# Function input  : FilesArray
+#                 : VarsArray
+#                   Both the array names mentioned above can be
+#                   changed if required. The variables are set
+#                   during the 'Array Creation' stage of the 
+#                   'var_file_collection_vars_files_array' function
+# Function output : The appropriate array's elements are deleted. If it
+#                   is a variable, it is unset. If it is a file/folder
+#                   it is deleted.
+function var_file_collection__delete_arrays() {
+
+  # Local 'nameref' variable
+  local -n ArrayName
+
+  # If number of arguments = 1, and the argument is not an empty string
+  if [[ $# -eq 1 && -n "$1" && "$1" =~ "${!VarsArrayName}"|"${!FilesArrayName}" ]] ; then
+    # Assigning the argument to the nameref variable
+    ArrayName="$1"
+
+    # If the array exists and is non-empty
+    if [[ -v "${ArrayName}" && "${#ArrayName[@]}" -gt 0 ]] ; then
+      # If the variable that the first argument points to matches \
+      # either the array defined by the nameref variable 'VarsArrayName' \
+      # or 'FilesArrayName'.
+      # Using indirection on a nameref returns the name of the variable that \
+      # it refers to. Calling the nameref variable returns the value of the \
+      # variable that it refers to.
+      case "${!ArrayName}" in
+        "${!VarsArrayName}")
+          printf '%s\n' "Unsetting variables created by script."
+          # For a list of elements listed in the array defined by the 'ArrayName' \
+          # nameref variable
+          for VARIABLE in "${ArrayName[@]}" ; do
+            # If the variable does not match the signature of a nameref variable
+            if [[ ! $(declare -p "${VARIABLE}") =~ "declare -n" ]] ; then
+              # Unset the variable
+              unset -v "${VARIABLE}" \
+                || print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+                  "\"${VARIABLE}\" might be a read-only variable"
+            # If VARIABLE is a 'nameref' variable
+            elif [[ $(declare -p "${VARIABLE}") =~ "declare -n" ]] ; then
+              # 'unset -v' will unset the variable that the nameref variable refers to, \
+              # and 'unset -n' will unset the nameref variable itself. Therefore, both the \
+              # nameref variable and the variable that it refers to will be unset.
+              # Unset the variable that the nameref refers to, then unset the nameref \
+              # variable itself.
+              unset -v "${VARIABLE}" \
+                && unset -n "${VARIABLE}" \
+                || print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+                  "Could not unset the nameref variable \"${VARIABLE}\"."
+            fi
+          done
+          # Unset the variable that the nameref refers to, which is either \
+          # 'VarsArray' or 'FilesArray'. There is no need to unset the nameref \
+          # variable 'ArrayName' as it's a local variable whose scope is restricted to this \
+          # function only.
+          #
+          # Unsetting the 'ArrayName' nameref without the prefix '$' unsets the variable \
+          # that 'ArrayName' points to. If you try to unset '$ArrayName', you end up \
+          # expanding the variable that 'ArrayName' points to.
+          unset -v ArrayName \
+            || print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+              "Could not unset the nameref variable \"${ArrayName}\"."
+        ;;
+        "${!FilesArrayName}")
+          printf '%s\n' "Deleting files created by script."
+          # For a list of variables in array defined by the nameref 'ArrayName'
+          for VARIABLE in "${ArrayName[@]}" ; do
+            # If the path defined by the value of the variable '$VARIABLE' is \
+            # either a file or a directory, delete them
+            if [[ -e "${!VARIABLE}" || -d "${!VARIABLE}" ]] ; then
+              rm -ri "${!VARIABLE}" \
+                || print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+                  "Could not delete \"${VARIABLE}\"."
+            else
+              print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+                "\"${!VARIABLE}\" - not a file/directory. Does not exist."
+            fi
+          done
+          # Unset array associated with nameref variable
+         # unset -v ArrayName \
+         #   || print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+         #     "Could not unset the variable \"${ArrayName}\"."
+         # Instead of unsetting the nameref here, leave it be.
+         # If the nameref needs to be unset, the user will call the 
+         # var_file_collection__cleanup subfunction
+        ;;
+      esac
+    # If the array either does not exist, or is empty
+    else
+      print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+        "\"${!ArrayName}\" is empty or uninitialised."
+    fi
+  # If number of arguments is not equal to 1, or is an empty string, or the input \
+  # argument does not match any of the variable names that the namerefs 'VarsArrayName' \
+  # and 'FilesArrayName' point to
+  else
+    print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+      "Incorrect number of arguments or empty string received. Or the argument did not match either of the array's names."
+  fi
+
+}
+
+
+# (WORKS)
+#
+# Function that unsets the namerefs that point to the variable array and files \
+# array.
+# Function input  : None. Just calling the function is sufficient
+# Function output : The namerefs and the variables they point to are unset
+function var_file_collection__cleanup() {
+  printf '%s\n\n' "Cleaning up global variables of 'var_file_collection' script"
+
+  # For a list of namerefs that point to VarsArray and FilesArray
+  for VARIABLE in VarsArrayName FilesArrayName ; do
+    # If the namerefs exist
+    if [[ -v "${VARIABLE}" || $(declare -p "${VARIABLE}" 2>/dev/null) ]] ; then
+      printf '\t%s\n' "Unsetting the nameref "${VARIABLE}", and the variable that it points to"
+
+      # Unset the variable that the nameref points to
+      unset -v "${VARIABLE}" \
+        || print_err -e 1 -f "${FUNCNAME}" -l "${LINENO}" -s \
+          "Could not unset "${VARIABLE}" during cleanup."
+      
+      # Unset the nameref itself
+      unset -n "${VARIABLE}" \
+        || print_err -e 1 -f "${FUNCNAME}" -l "${LINENO}" -s \
+          "Could not unset nameref "${VARIABLE}" during cleanup."
+    # If the namerefs do not exist
+    else
+      print_err -e 1 -f "${FUNCNAME}" -l "${LINENO}" -s \
+        "The nameref "${VARIABLE}" does not exist" \
+          && continue 1
+    fi
+  done
 }
 
 
@@ -514,6 +585,12 @@ function var_file_collection__add_to_array() {
 #                      Unsets all variables in the array that stores
 #                      variables, and deletes all files and folders
 #                      that the script has created. Used for cleanup
+#                      of global variables and files set/created by
+#                      the user of the script.
+#                 7. cleanup
+#                      Unsets the global namerefs and the variables
+#                      that they point to, which were created by the
+#                      script.
 #
 # Function input  : var_file_collection__vars_files_array PATH
 # Function output : None. The variable 'PATH' is added to an array
@@ -539,7 +616,8 @@ function var_file_collection__vars_files_array() {
              [GetAllArg]="getall" \
              [DelVarsArg]="delvars" \
              [DelFilesArg]="delfiles" \
-             [DelAllArg]="delall" )
+             [DelAllArg]="delall" \
+             [CleanupArg]="cleanup" )
 
   # Local variable that is used to check if the input argument matched any of the \
   # arguments listed above
@@ -548,14 +626,18 @@ function var_file_collection__vars_files_array() {
   # Local array for storing arguments, temporarily
   local -a tempArray
 
-  # For all values in the associative array (getvars, getfiles, ...delall)
-  for VARIABLE in "${ArgArray[@]}" ; do
-    # If the input argument matches any of the above allowed arguments
-    if [[ "$1" = "${VARIABLE}" ]] ; then
-      # Set the 'FlagVar' variable
-      FlagVar=1
-    fi
-  done
+  # If the number of arguments is = 1
+  if [[ $# -eq 1 ]] ; then
+    # For all values in the associative array (getvars, getfiles, ...delall)
+    for VARIABLE in "${ArgArray[@]}" ; do
+      # If the input argument matches any of the above allowed arguments
+      if [[ "$1" = "${VARIABLE}" ]] ; then
+        # Set the 'FlagVar' variable
+        FlagVar=1 \
+          && break 1
+      fi
+    done
+  fi
 
   # Now, if the argument matched any of the pre-defined arguments above(getvars, \
   # getfiles, getall, delvars, delfiles, delall), the 'FlagVar' variable will be \
@@ -628,6 +710,12 @@ function var_file_collection__vars_files_array() {
         # files and/or folders listed in the array
         var_file_collection__delete_arrays "${!FilesArrayName}"
       ;;
+      "${ArgArray[CleanupArg]}")
+        # Calling the 'var_file_collection__cleanup' function \
+        # which unsets the namerefs that point to the VarsArray \
+        # and FilesArray variables
+        var_file_collection__cleanup
+      ;;
     esac
 
   ##################
@@ -643,39 +731,80 @@ function var_file_collection__vars_files_array() {
     #
     # Calling the 'present_in_array' module and passing elements of 'tempArray' to it. \
     # The output of this module(except the errors) is added to an array(tempArray).
-    #tempArray=($(remove_duplicate_args "$@" 2>/dev/null))
-    #tempArray=($(var_file_collection__present_in_array "${tempArray[@]}" 2>/dev/null))
-    #
-    # Have replaced the above two commands with the help of the 'mapfile' utility
-    mapfile -d ' ' -t tempArray < <(remove_duplicate_args "$@" 2>/dev/null)
-    mapfile -d ' ' -t tempArray < <(var_file_collection__present_in_array "${tempArray[@]}" 2>/dev/null)
+    #mapfile -d ' ' -t tempArray < <(remove_duplicate_args "$@" 2>/dev/null)
+    mapfile -d ' ' -t tempArray < <(remove_duplicate_args "$@")
+    #mapfile -d ' ' -t tempArray < <(var_file_collection__present_in_array "${tempArray[@]}" 2>/dev/null)
+    mapfile -d ' ' -t tempArray < <(var_file_collection__present_in_array "${tempArray[@]}")
 
-
-    # If the temporary array has more than 0 elements
-    if [[ "${#tempArray[@]}" -gt 0 ]] ; then
+    # If the temporary array has more than 0 elements and if the first element is not \
+    # an empty string
+    if [[ "${#tempArray[@]}" -ge 1 && "${tempArray[0]}" != "" ]] ; then
       # Providing the elements of the 'tempArray' array as input to the 'add_to_array' module
-      # This array obtains
       var_file_collection__add_to_array "${tempArray[@]}"
     # If the 'tempArray' array is empty
     else
-      print_err -e 1 -s "No output from the 'present_in_array' module. Input already exists in array."
+      print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+        "No output from the 'present_in_array' module. Input already exists in array."
     fi
 
   # If the input argument(s) does not match any of the previous conditions
   else
-    print_err -e 1 -s "Argument(s) received : \"$*\". Does not match any of the conditions."
+    print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+      "Argument(s) received : \"$*\". Does not match any of the conditions." \
+        && exit 1
   fi
 }
 
-# This file isn't meant to be executed. It is preferable to unset the 'execute' bit on this file.
-# Due to how multiple scripts are sourcing other scripts, namely the 'general_functions.sh' file \
-# sourcing this file, and this file sourcing the 'general_functions.sh' file, there seems to be \
-# some mix up in the arguments. This file, when it has a line that ingests all input arguments, \
-# for example, `var_file_collection__vars_files_array "$@"`, some of the arguments from the \
-# 'general_functions.sh' file are being ingested by this file. Unsure of why this is happening.
-# To solve this, and to also solve the issue of circular dependencies, it is better to unset the \
-# execute bit on all scripts that do not absolutely need it. This way, when a certain file is \
-# imported/sourced, the commands in it aren't executed. Ideally, only the file/script that is \
-# responsible for handling user input would have the execute bit set.
+
+# Main function that should be executed
+function var_file_collection__main() {
+  # Local array to store paths to files that need to be imported
+  local -a importFiles
+  importFiles=(
+    "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh"
+  )
+
+  # Importing the 'general_functions.sh' file first
+  # This is like a 'chicken and egg' situation
+  source "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh"
+
+  # Now call the 'import_files' function which is a part of the 'general_functions.sh' \
+  # script. This function will ensure that no recursive importing takes place. It does \
+  # this by setting a unique global variable for each script imported.
+  import_files "${importFiles[@]}"
+}
+
+
+# Calling the main function
+var_file_collection__main
+
+################################## For testing purposes (uncomment when testing)
+
+#testVarN1=1
+#testVarN2=2
+#testVarN3="String 1"
+#testFile1="/Users/harshavardhanj/Desktop/testfile1"  # Create file before testing
+#testFile2="/Users/harshavardhanj/Desktop/testfile2"  # Create file before testing
+#
+#
+#var_file_collection__vars_files_array testFile1 testFile1 testVarN1 testVarN2 testVarN1
+#var_file_collection__vars_files_array testFile2 testVarN3 testFile2 testVarN3
+#
+#var_file_collection__vars_files_array getvars
+#var_file_collection__vars_files_array getfiles
+#var_file_collection__vars_files_array getall
+#var_file_collection__vars_files_array delvars
+#var_file_collection__vars_files_array delfiles
+#var_file_collection__vars_files_array delall
+#var_file_collection__vars_files_array cleanup
+
+################################## For testing purposes (uncomment when testing)
+
+# Unset the execute bit on this file. It does not need to be executed \
+# directly. The functions and commands in this script will be executed \
+# when it is sourced/imported by another script. Since this script \
+# contains a collection of helper functions, except for the 'main' \
+# function, no other command needs to be executed in this script.
+
 
 # End of script
