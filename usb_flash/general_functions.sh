@@ -254,8 +254,7 @@ function log_to_file() {
 	# and if the 'logFile' variable has not been set
 	elif [[ ! -v logFile ]] ; then
 		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
-			"A log file has not yet been initialised. It can be done by running \
-\`${FUNCNAME} init \"/path/to/file\"\`, and the file will be created and initialised for logging."
+			"A log file has not yet been initialised. It can be done by running \`${FUNCNAME} init \"/path/to/file\"\`, and the file will be created and initialised for logging."
 	# If none of the previous 'if' conditions were fulfilled
 	else
 		# If the 'logFile' variable has not been set
