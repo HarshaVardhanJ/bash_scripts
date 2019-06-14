@@ -21,11 +21,26 @@ set -e
 # Importing the 'general_functions.sh' script
 source ./general_functions.sh
 
+# This ensures that the an infinite loop of recursive importing does not happen.
+# That happens when 'file1' sources 'file2', and when 'file2' also sources/imports \
+# 'file1'. To prevent this, the 'import_files' function was written. It sets a unique \
+# global variable to every script after importing it. The next time the script is asked \
+# to be imported via the 'import_files' function, it first checks if that unique global \
+# variable has been set, and if it has, it does not import that script.
+import_files "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh"
+
+
+# (WORKS)
+#
 # Function that returns the type of OS on
 # which the script is run. The return values
 # are 'Linux' and 'Mac'. More can be added
 # if needed.
 #
+# Function input  : None. Just call the function
+# Function output : Returns the type of OS
+# Example         : os_check (Calling the function)
+#                 : Mac (Or Linux, depending on the OS)
 function os_check() {
 
   # Associative array for storing values related \
@@ -70,7 +85,8 @@ function os_check() {
         printf '%s\n' "${OsArray_OsType["${Key}"]}" \
           && break
       else
-        print_err -e 1 -s "Operating system type not in list. Check 'os_check' function."
+        print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+        "Operating system type not in list. Check 'os_check' function."
       fi
     done
   # If the 'OSTYPE' shell variable has not been set  
@@ -82,17 +98,22 @@ function os_check() {
       if [[ "${OsCheckCommand}" = "${Key}" ]] ; then
         # Print 'value' of the OsArray corresponding to the matching key \
         # and break out of the 'for' loop
-        printf '%s\n' "${OsArray["${Key}"]}" \
+        printf '%s\n' "${OsArray_Uname["${Key}"]}" \
           && break
       else
-        print_err -e 1 -s "Operating system type not in list. Check 'os_check' function."
+        print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+        "Operating system type not in list. Check 'os_check' function."
       fi
     done
   fi
 
 }
 
-# Calling the main function
-os_check
+
+# This file isn't meant to be executed. It is preferable to unset the 'execute' bit on this file.
+# To solve the issue of circular dependencies, it is better to unset the execute bit on all scripts \
+# that do not absolutely need it. This way, when a certain file is  imported/sourced, the commands \
+# in it aren't executed. Ideally, only the file/script that is responsible for handling user input \
+# would have the execute bit set.
 
 # End of script
