@@ -18,10 +18,11 @@
 
 # Cleanup function that unsets all variables and arrays used in this script
 function finish() {
-	for VAR in TTY_ARRAY KILL_TTY
-	do
+	# For a list of all global variables declared in this script
+	for VAR in KILL_TTY ; do
 		# Unsetting/destroying variable/array
-		unset -v "${VAR}"
+		unset -v "${VAR}" \
+			|| printf '%s\n' "Could not unset variable \"${VAR}\"."
 	done
 }
 
@@ -32,78 +33,109 @@ trap finish EXIT SIGHUP SIGINT SIGTERM
 
 # Function that generates an array that contains username and tty values
 # of other tty sessions
+#
+# The contents of this array are printed as output when the function is \
+# called.
 function tty_list() {
-	# Get value of own tty
+	# Variable to store value of own tty
 	local SELF_TTY
-	local MACHINE="$(uname -a)"
+
+	# If the 'OSTYPE' shell variable has been set
+	if [[ -v OSTYPE ]] ; then
+		# Then set the nameref variable 'MACHINE'
+		# This way, when the MACHINE variable is called, \
+		# it will expand the OSTYPE variable
+		local -n MACHINE=OSTYPE
+	# If the 'OSTYPE' variable has not been set
+	else
+		# Variable that stores type of OS
+		# Get OS info from 'uname' command
+		local MACHINE="$(uname -o)"
+	fi
 
 	# Different 'cut' implementations for different OSs
-	if [[ "${MACHINE}" =~ "Linux" ]]
-	then
+	#
+	# If the OS is Linux
+	if [[ "${MACHINE}" =~ [Ll]inux ]] ; then
+		# Get name of own tty session
 		SELF_TTY="$(tty | cut -d'/' -f3,4)"
-	elif [[ "${MACHINE}" =~ "Darwin" ]]
-	then
+	# Or is the OS is Mac
+	elif [[ "${MACHINE}" =~ [Dd]arwin ]] ; then
+		# Get name of own tty session
 		SELF_TTY="$(tty | cut -d'/' -f3)"
+	# If the OS is neither Linux nor Mac
 	else
-		printf '\n%s\n' "Not a GNU/Linux or BSD based OS. Script will not run."
-		exit 1
+		printf '\n%s\n' "Not a GNU/Linux or BSD based OS. Script will not run." \
+			&& exit 1
 	fi
 
 	# Declaring a global array to store values of user and associated tty
-	declare -ga TTY_ARRAY
+	#declare -ga TTY_ARRAY
+
+	local -a TTY_ARRAY
 
 	# Maps all values of 'username tty' to the 'TTY_ARRAY' array
-	mapfile -t TTY_ARRAY<<<"$(last | grep -E "tty|pts" | grep -i "logged in" | grep -iv "${SELF_TTY}" | awk '{print $1, $2}')"
+	mapfile TTY_ARRAY< <(last \
+											| grep -E "tty|pts" \
+											| grep -i "logged in" \
+											| grep -iv "${SELF_TTY}" \
+											| awk '{print $1, $2}')
 
 	# If the 'TTY_ARRAY' array is not empty
-	if [[ "${#TTY_ARRAY[@]}" ]] && [[ "${TTY_ARRAY[0]}" != "" ]]
-	then
+	if [[ "${#TTY_ARRAY[@]}" -gt 0 ]] && [[ -n "${TTY_ARRAY[0]}" ]] ; then
 		# If there are more than 1 pseudo-terminals, add an option to kill all of them
-		if [[ "${#TTY_ARRAY[@]}" -gt 1 ]]
-		then
+		if [[ "${#TTY_ARRAY[@]}" -gt 1 ]] ; then
 			# Adding the final 'kill all tty' option to the array
 			TTY_ARRAY+=('kill all tty')
 		fi
+
+		# Print the populated array
+		#printf '%s ' "${TTY_ARRAY[@]}"
+		printf "${TTY_ARRAY[*]}"
+
 	else
 		# Exit script if no pseudo-terminals are found
-		printf '%s\n' "No pseudo-terminals found. Exiting."
-		exit 1
+		printf '%s\n' "No pseudo-terminals found. Exiting." \
+			&& exit 1
 	fi
 }
 
 
 # Function that helps pick a tty to be terminated
+#
+# The tty(or ttys) picked is/are printed as output
 function tty_selector() {
-	# Calling the 'tty_list' function to populate the 'TTY' array
-	tty_list
+	
+	# Local array to store all 'username tty' values
+	local -a TTY_ARRAY
+	
+	# Calling the 'tty_list' function to populate the 'TTY_ARRAY' array
+	#TTY_ARRAY=($(tty_list))
+	mapfile -t TTY_ARRAY < <(tty_list)
 
 	# PS3 prompt. Will be displayed while the user is prompted to pick a tty to terminate
-	# If more than 1 tty have been found
-	if [[ ${#TTY_ARRAY[@]} -gt 1 ]]
-	then
+	# If more than 1 tty has been found
+	if [[ ${#TTY_ARRAY[@]} -gt 1 ]] ; then
 		local PS3="Pick a tty to terminate. To terminate all of them, pick the last option. Or type 'q' to exit. [1-${#TTY_ARRAY[@]}] : "
-	elif [[ ${#TTY_ARRAY[@]} -eq 1 ]]
-	then
+	# If only 1 tty has been found
+	elif [[ ${#TTY_ARRAY[@]} -eq 1 ]] ; then
 		local PS3="Confirm to terminate the tty by entering the number beside it. Or type 'q' to exit. : "
 	fi
 
-	while true
-	do
+	# Keep executing the loop
+	while true ; do
 		# Print header for clarity
 		printf '%s %s\n%s\n' "  USER" "TTY" "------------"
 
 		# Prompt user to pick a tty
 		# The option number picked is stored $REPLY
 		# The content of the option picked is stored in $TTY_PICKED
-		select TTY_PICKED in "${TTY_ARRAY[@]}"
-		do
+		select TTY_PICKED in "${TTY_ARRAY[@]}" ; do
 			# If the option picked is a valid number which lies in a range of the
 			# size of array
-			if [[ "${REPLY}" =~ [1-"${#TTY_ARRAY[@]}"] ]]
-			then
+			if [[ "${REPLY}" =~ [1-"${#TTY_ARRAY[@]}"] ]] ; then
 				# If the option picked is the last option, which is 'kill all tty'
-				if [[ "${REPLY}" -gt 1 ]] && [[ "${REPLY}" -eq "${#TTY_ARRAY[@]}" ]]
-				then
+				if [[ "${REPLY}" -gt 1 ]] && [[ "${REPLY}" -eq "${#TTY_ARRAY[@]}" ]] ; then
 					# Add all tty values to an array 'KILL_TTY'
 					# To explain the logic below, the 'TTY_ARRAY' is being expanded
 					# to all its elements, from the 0th element to the last-but-one
@@ -115,24 +147,29 @@ function tty_selector() {
 
 					# Declare a global array 'KILL_TTY'
 					declare -ga KILL_TTY
+					#local -a KILL_TTY
 
 					# Loop through elements of array and append the tty values to 'KILL_TTY' array
-					for INDEX in "${TTY_ARRAY[@]:0:$((${#TTY_ARRAY[@]}-1))}"
-					do
-						KILL_TTY+=("$(printf '%s' "${INDEX}" | awk '{print $2}')")
+					for INDEX in "${TTY_ARRAY[@]:0:$((${#TTY_ARRAY[@]}-1))}" ; do
+						KILL_TTY+=("$(printf '%s' "${INDEX}" | tail -n +1 | awk '{print $2}')")
 					done
+				# If a specific tty was picked to be killed, instead of the 'kill all tty' option
 				else
 					# Assign selected tty to global variable 'KILL_TTY'
-					declare -g KILL_TTY
-					KILL_TTY="$(printf '%s' "${TTY_PICKED}" | awk '{print $2}')"
+					#declare -g KILL_TTY
+					KILL_TTY=("$(printf '%s' "${TTY_PICKED}" | tail -n +1 | awk '{print $2}')")
 				fi
 
-				break 2
+				# Print the 'KILL_TTY' array, and break out of the while loop
+				#printf '%s' "${KILL_TTY[@]}" \
+				#	&& break 2
+				printf "${KILL_TTY[*]}" \
+					&& break 2
 			# If the user enters 'Q' or 'q', exit the script
 			elif [[ "${REPLY}" =~ Q|q ]]
 			then
 				exit 1
-			# If any other value of entered/picked, re-prompt the user
+			# If any other value is entered/picked, re-prompt the user
 			else
 				printf '%s\n' "Incorrect option. Pick an option between 1 and ${#TTY_ARRAY[@]}"
 			fi
@@ -143,25 +180,28 @@ function tty_selector() {
 
 # Function that kills the picked tty
 function tty_kill() {
-	# Calling the 'tty_selector' function to obtain the tty to be terminated
-	tty_selector
 
-	# If the 'KILL_TTY' variable is not empty, proceed
-	if [[ "${KILL_TTY}" != "" ]]
-	then
-		# Check if the 'KILL_TTY' variable is an array
-		if [[ "$(declare -p KILL_TTY)" =~ "declare -a" ]]
-		then
-			# Loop through all elements of the array 'KILL_TTY'
-			for SESSION in "${KILL_TTY[@]}"
-			do
-				# Killing all tty in 'KILL_TTY' array
-				pkill -t "${SESSION}" && printf '\n%s\n' "TTY '${SESSION}' has been terminated."
-			done
-		else
-			# Killing the tty picked by the user
-			pkill -t "${KILL_TTY}" && printf '\n%s\n' "TTY '${KILL_TTY}' has been terminated."
-		fi
+	# Local array to store ttys that are to be killed
+	local -a KILL_TTY
+
+	# Calling the 'tty_selector' function to obtain the tty to be terminated
+	#mapfile -t KILL_TTY < <(tty_selector)
+	KILL_TTY=("$(tty_selector | tail -n +3)")
+	#echo "Printing KILL_TTY variable : \"${KILL_TTY}\""
+
+	# If the 'KILL_TTY' variable has been set
+	if [[ -v KILL_TTY ]] ; then
+		# For a list of all selected ttys
+		for SESSION in "${KILL_TTY[@]}" ; do
+			# Terminate the tty
+			pkill -t "${SESSION}" \
+				&& printf '\n%s\n' "TTY \"${SESSION}\" has been terminated." \
+				|| printf '\n%s\n' "TTY \"${SESSION}\" could not be terminated"
+		done
+	# If the 'KILL_TTY' variable has not been set
+	else
+		printf '%s\n' "Could not pick tty to be terminated. Exiting" \
+			&& exit 1
 	fi
 }
 
