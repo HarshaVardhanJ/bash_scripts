@@ -3,7 +3,7 @@
 #: Title        : general_functions.sh
 #: Date         : 07-Mar-2019
 #: Author       : "Harsha Vardhan J" <vardhanharshaj@gmail.com>
-#: Version      : 0.1
+#: Version      : 1.0 (Stable)
 #: Description  : This script contains functions that are frequently
 #                 used by the 'usb_flash' program/scripts. Import this
 #                 in the other scripts in order to use the functions.
@@ -19,19 +19,30 @@
 # Exit when a command fails and returns a non-zero exit code
 set -e
 
+
 # (WORKS)
 #
 # Function that helps print messages to standard error.
 # The function accepts strings. Each string will be printed \
 # on a new line. This function also provides the option of \
 # returning any specific exit code. This value will need to be \
-# passed as an argument to the '-e' flag
+# passed as an argument to the '-e' flag. The function can also \
+# print the function name(which will have to be passed as an 
+# argument) and the line number (which will also have to be passed \
+# as an argument).
 #
 # Function input  : --exitcode 200 --string "Test string" --string "Test string2"
 #                 : -e 200 -s "Test string" -s "Test string2"
 #                 : -s "Test string"
+#                 : -f "functionName" -l "lineNumber" -s "string"
+#                 : -l "lineNumber" -s "string"
+#                 : -f "functionName" -s "string"
 # Function output : The string will be printed, and if an exit code is given, it will \
-#                   be passed. If it is not given, only the string will be printed.
+#                   be returned. If it is not given, only the string will be printed. \
+#                   There is also the option to print the function name and line number \
+#                   if they are passed as arguments. The shell variable FUNCNAME contains \
+#                   the name of all functions being called. The shell variable LINENO \
+#                   contains the line number of the current command being executed.
 #
 function print_err() {
 	
@@ -40,6 +51,12 @@ function print_err() {
 
 	# Array that stores strings to be printed to standard error
 	local -a errorMessage
+
+	# Variable that contains name of the function from which this module is being called
+	local funcName
+
+	# Variable that contains line number from which this module is being called
+	local lineNum
 
 	# If the number of arguments is even and is >= 2
 	if [[ $(( $# % 2 )) -eq 0 && $# -ge 2 ]] ; then
@@ -59,8 +76,9 @@ function print_err() {
 						# an exit code, calling the function within the function, in this case, will \
 						# result in an infinite loop because of the while statement. The function can \
 						# be called outside the parent 'if' statement
-						printf '%s\n' "Expecting integer after the '-e' flag. Received \"$2\"." \
-							&& return 1
+						colourise -e 1 -c blue -s "${FUNCNAME}" -c yellow -s "${LINENO}" \
+							-c red -s "Expecting integer after the '-e' flag. Received \"$2\"." \
+								&& return 1
 					fi
 				;;
 				# If the "first" argument is either '--string' or '-s'
@@ -73,17 +91,58 @@ function print_err() {
 						shift 2
 					# If the second argument is an empty string
 					else
-						printf '%s\n' "Empty string encountered." \
-							&& return 1
+						colourise -e 1 -c blue -s "${FUNCNAME}" -c yellow -s "${LINENO}" \
+							-c red -s "Empty string encountered after '-s' flag." \
+								&& return 1
 					fi
+				;;
+				# If the "first" argument is either '--func' or '-f'
+				--func|-f)
+					# If the second argument is not an empty string
+					if [[ -n "$2" ]] ; then
+						# Assign the value of the second argument to the 'funcName' variable
+						funcName="$2"
+						# Shift away two arguments
+						shift 2
+					else
+						colourise -e 1 -c blue -s "${FUNCNAME}" -c yellow -s "${LINENO}" \
+							-c red -s "No function name given" \
+								&& return 1
+					fi
+				;;
+				# If the "first" argument is either '--line' or '-l'
+				--line|-l)
+					# If the second argument is an integer
+						if [[ "$2" =~ (^[+][1-9])?[0-9]+ ]] ; then
+							lineNum="$2"
+						# Shift away two arguments
+						shift 2
+						else
+							colourise -e 1 -c blue -s "${FUNCNAME}" -c yellow -s "${LINENO}" \
+								-c red -s "Expecting integer after the '-l' flag. Received \"$2\"." \
+									&& return 1
+						fi
 				;;
 				# If any other argument is provided
 				*)
-					printf '%s\n' "Incorrect argument(s). Check function's usage." \
-						&& return 1
+					colourise -e 1 -c blue -s "${FUNCNAME}" -c yellow -s "${LINENO}" \
+						-c red -s "Incorrect argument(s). Check function's usage." \
+							&& return 1
 				;;
 			esac
 		done
+
+		# If funcName variable is set, print it in blue
+		if [[ -v funcName && -n "${funcName}" ]] ; then
+			# Print the value of the variable
+			colourise -c blue -s "${funcName}" -e 1 -n 0
+		fi
+
+		# If lineNum variable is set, print it in yellow
+		if [[ -v lineNum && -n "${lineNum}" ]] ; then
+			# Print the value of the variable
+			colourise -c yellow -s "${lineNum}" -e 1 -n 0
+		fi
 
 		# Print the text
 		# Cycle through all indices of the 'errorMessage' array
@@ -98,7 +157,7 @@ function print_err() {
 		# subtraction.
 		for VARIABLE in $( seq 0 1 $(( ${#errorMessage[@]} - 1 )) ) ; do
 			# Print the elements of the 'errorMessage' array to standard error
-			printf '%s\n' "${errorMessage["${VARIABLE}"]}" >&2
+			colourise -c red -s "${errorMessage["${VARIABLE}"]}" >&2
 		done
 
 		# If the 'returnCode' variable has been set
@@ -109,7 +168,7 @@ function print_err() {
 
 	# If number of arguments is not >= 2
 	else
-		print_err -e 1 -s "Incorrect number of arguments. Received $#. Requires an even number of arguments."
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "Incorrect number of arguments. Received $#. Requires an even number of arguments."
 	fi
 
 }
@@ -130,34 +189,78 @@ function log_to_file() {
 	local initArg
 	initArg="init"
 
-	# Global variable that stores path to log file
-	declare -gx logFile
+	# Local variable to store name of parent directory of log file
+	# Used for temporary purposes only
+	local logDir
 
-	# Sending the 'logFile' global variable to the 'vars_files_array' subfunction, which \
-	# adds the variable to an array for purposes of keeping track of all global variables \
-	# which can be unset during the cleanup step.
-	#var_file_collection__vars_files_array logFile
 
 	# If the first argument matches the string defined in 'initArg'
 	if [[ $# -eq 2 && "$1" = "${initArg}" ]] ; then
-		# If the parent directory of the file defined by the second argument \
-		# exists and if the file defined by the second argument does not exist
-		if [[ -d "$( dirname "$2" )" && ! -f "$2" ]] ; then
-			touch "$2" \
-				&& logFile=$(readlink -f "$2")
-		# If either the parent directory of the file does not exist, or if the file \
-		# defined by the second argument exists
+		# Obtain the parent directory of the log file and assign it \
+		# to the 'logDir' variable
+		logDir="$(dirname "${2}")"
+
+		# If parent directory of log file exists and is writeable by the user \
+		# that the script is running as
+		if [[ -d "${logDir}" && -w "${logDir}" ]] ; then
+			# If the log file to be initialised does not exist
+			if [[ ! -f "${2}" ]] ; then
+				# Create the log file and assign its full path to the 'logFile' variable
+				touch "${2}" \
+					&& declare -gx logFile \
+					&& logFile="$(readlink -f "${2}")"
+
+				# Sending the 'logFile' global variable to the 'vars_files_array' subfunction, which \
+				# adds the variable to an array for purposes of keeping track of all global variables \
+				# which can be unset during the cleanup step.
+				var_file_collection__vars_files_array logFile
+
+			# If log file to be initialised exists
+			else
+				# If the 'logFile' variable has not been set
+				if [[ ! -v logFile ]] ; then
+					# Assigning to the log file to the 'logFile' variable
+					declare -gx logFile \
+						&& logFile="$(readlink -f "${2}")"
+
+					# Sending the 'logFile' global variable to the 'vars_files_array' subfunction, which \
+					# adds the variable to an array for purposes of keeping track of all global variables \
+					# which can be unset during the cleanup step.
+					var_file_collection__vars_files_array logFile
+
+				# If the 'logFile' variable has been set and is the same as the file passed
+				elif [[ "${logFile}" = "${2}" ]] ; then
+					print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+						"The file \"${2}\" has already been initialised as the log file."
+				# If the 'logFile' variable does not match the file passed
+				elif [[ "${logFile}" != "$2" ]] ; then
+					print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+						"A log file \"${logFile}\" has been initialised previously."
+				fi
+			fi
+		# If the parent directory either does not exist, or is not writeable by \
+		# the user that the script is running as
 		else
-			(print_err -e 1 -s "Either \"$(dirname "$2")\" does not exist, or the file \"$2\" exists.")
+			print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+				"Either the directory \"${logDir}\" does not exist, or it isn't writeable by \"${USER}\"."
 		fi
+			
 	# If the number of arguments = 1, and if the first argument is not an empty string, \
-	# and if the 'logFile' variable is set
-	elif [[ $# -eq 1 && -n "$1" && -v logFile ]] ; then
+	# and if the 'logFile' file exists
+	elif [[ $# -eq 1 && -n "$1" && -f "${logFile}" ]] ; then
 		# Append the input string to the log file
 		printf '%s\n' "$1" >> "${logFile}"
+	# If two arguments are received, and if the second one is not an empty string \
+	# and if the 'logFile' variable has not been set
+	elif [[ ! -v logFile ]] ; then
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+			"A log file has not yet been initialised. It can be done by running \
+\`${FUNCNAME} init \"/path/to/file\"\`, and the file will be created and initialised for logging."
 	# If none of the previous 'if' conditions were fulfilled
 	else
-		print_err -e 1 -s "Incorrect argument. Received \"$1\". Check function's usage"
+		# If the 'logFile' variable has not been set
+		[[ ! -v logFile ]] && print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+			"Incorrect argument. Received \"$1\". Check function's usage"
 	fi
 
 }
@@ -177,8 +280,8 @@ function remove_duplicate_args() {
 	# Local array to store input arguments
 	local -n argArrayName="argArray"
 
-	# If the number of arguments is > 0
-	if [[ $# -gt 0 ]] ; then
+	# If the number of arguments is > 1
+	if [[ $# -gt 1 ]] ; then
 		# For a list of given arguments
 		for ARGUMENT in "$@" ; do
 			# If the argument is not an empty string
@@ -187,7 +290,8 @@ function remove_duplicate_args() {
 				argArrayName+=("${ARGUMENT}")
 			# If the argument is an empty string
 			else
-				print_err -e 1 -s "Empty string received."
+				print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "Empty string received." \
+					&& continue 1
 			fi
 		done
 
@@ -199,9 +303,13 @@ function remove_duplicate_args() {
 			argArrayName=($(printf '%s\n' "${argArrayName[@]}" | sort -u)) \
 				&& printf '%s ' "${argArrayName[@]}"
 		fi
+	# If the number of arguments = 1
+	elif [[ $# -eq 1 ]] ; then
+		printf '%s ' "${1}"
 	# If no arguments have been received
 	else
-		print_err -e 1 -s "No arguments received."
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "No arguments received." \
+			&& exit 1
 	fi
 
 }
@@ -252,7 +360,9 @@ function generate_import_status_name() {
 	# If either the number of arguments is not 1, or the argument is an empty string, or if the \
 	# file defined by the argument does not exist
 	else
-		print_err -e 1 -s "Incorrect number of arguments, or empty string, or non-existent file"
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+			"Incorrect number of arguments, or empty string, or non-existent file" \
+				&& exit 1
 	fi
 
 }
@@ -281,9 +391,9 @@ function set_import_status() {
 	# and setting its value to 1 which indicates that it has been imported, AND \
 	# adding the variable to the collection array which keeps track of all global \
 	# variables
-	declare -gx "${tempImportVarName}"=1
-	#declare -gx "${tempImportVarName}"=1 \
-	#	&& var_file_collection__vars_files_array "${tempImportVarName}"
+	declare -gix "${tempImportVarName}"=1
+	#declare -gix "${tempImportVarName}"=1 \
+	#	&& var_file_collection__vars_files_array tempImportVarName
 
 }
 
@@ -333,30 +443,45 @@ function import_files() {
 				fi
 			# If the file either does not exist, is unreadable, is of size zero, or is an empty string
 			else
-				print_err -e 1 -s "Empty argument, or unreadable file, or empty file, or file does not exist"
+				print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+					"Empty argument, or unreadable file, or empty file, or file does not exist" \
+						&& exit 1
 			fi
 		done
+
+		# Adding the 'importStatus' variable to the VarsArray
+		#var_file_collection__vars_files_array "${importStatusName}"
+
 	# If no arguments have been given
 	else
-		print_err -e 1 -s "Received no arguments. Requires at least one."
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+			"Received no arguments. Requires at least one." \
+				&& exit 1
 	fi
 }
 
+# Main function that should be called
+function general_functions__main() {
+	# Local array containing paths of scripts which are to be imported
+	local -a importFiles
+	importFiles=(
+		"/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/var_file_collection.sh"
+		"/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/commands_check.sh"
+		"/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/colourise_output.sh"
+	)
 
-############################################### Any and all commands not belonging to any
-############################################### function must be entered below this line
+	# Import the files defined in the 'importFiles' array
+	import_files "${importFiles[@]}"
+}
 
 
-# Array to store path to files that need to be imported
-declare -a importFiles
-importFiles=(
-	"/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/var_file_collection.sh"
-	"/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/commands_check.sh"
-)
+# Unset the execute bit on this file. It does not need to be executed \
+# directly. The functions and commands in this script will be executed \
+# when it is sourced/imported by another script. Since this script \
+# contains a collection of helper functions, except for the 'main' \
+# function, no other command needs to be executed in this script.
 
-# Seems to result in recursive importing of files as the 'var_file_collection' file already \
-# has a `source ./general_functions.sh` command.
-# Importing the files defined in the 'importFiles' array
-#import_files "${importFiles[@]}"
+# Calling the main function
+general_functions__main
 
 # End of script
