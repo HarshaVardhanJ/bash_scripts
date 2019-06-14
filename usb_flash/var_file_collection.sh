@@ -366,7 +366,7 @@ function var_file_collection__print_arrays() {
   # declare -n tempVar=testVar
   # echo $tempVar
   # Output = 1
-  # Check `man bash` for more information on namerefs
+  # Check 'man bash' for more information on namerefs
   local -n ArrayName
 
   # If number of arguments = 1, and if the first argument matches either of the \
@@ -478,13 +478,6 @@ function var_file_collection__delete_arrays() {
                 "\"${!VARIABLE}\" - not a file/directory. Does not exist."
             fi
           done
-          # Unset array associated with nameref variable
-         # unset -v ArrayName \
-         #   || print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
-         #     "Could not unset the variable \"${ArrayName}\"."
-         # Instead of unsetting the nameref here, leave it be.
-         # If the nameref needs to be unset, the user will call the 
-         # var_file_collection__cleanup subfunction
         ;;
       esac
     # If the array either does not exist, or is empty
