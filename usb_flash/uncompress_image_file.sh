@@ -15,49 +15,6 @@
 ################
 
 
-# Function that uncompresses image file if it's compressed
-# Function input  : /path/to/compressed/file
-# Function output : /absolute/path/to/image/file
-#
-function uncompress_image_file() {
-
-	# Variable to store absolute path of compressed file
-	local compressedFile
-
-	# If number of arguments = 1
-	if [[ $# -eq 1 ]] ; then
-		# If the file is non-zero in size, and is readable by the \
-		# user that the script is running as
-		if [[ -s "$1" && -r "$1" ]] ; then
-			# Call the function that checks if the input file is compressed,
-			# and add the output to the 'compressedFile' variable
-			compressedFile="$(uncompress_image_file__compression_check "$1")"
-
-			# If the 'compressedFile' variable has been set and is not an empty string
-			if [[ -v compressedFile && -n "${compressedFile}" ]] ; then
-
-				# Calling function that picks the appropriate command to uncompress/extract
-				# the compressed file based on the compression/archive type
-				################# Uncompression Function #####################
-				uncompress_image_file__uncompression_function "${compressedFile}" \
-					|| print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 \
-							-s "Error returned by the 'uncompression_function' module."
-			
-			fi
-    # If the file doesn't exist, or is of size zero, or is unreadable by the user which
-    # the script is running as
-		else
-      print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "File \"$1\" either does not exist, is of zero-size, \
-or is unreadable by the user \"${USER}\"."
-		fi
-	# If number of arguments is not equal to 1
-	else
-		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "Received $# arguments. Requires only 1."
-	fi
-
-}
-
-
 # Function that checks if the image file is compressed
 # Function input  : /path/to/file
 # Function output : /absolute/path/to/file
@@ -153,8 +110,9 @@ function uncompress_image_file__uncompression_function() {
 	fi
 
 
-	# If the 'compressedFile' variable has been set
-	if [[ -v compressedFile ]] ; then
+	# If the 'compressedFile' variable has been set, and if the file defined by the \
+	# variable is readable by the user which the script is running as
+	if [[ -v compressedFile && -r "${compressedFile}" ]] ; then
 		# Obtain the file extension using substring removal
 		# Take a look at bash hacker's wiki on substring removal \
 		# for more info
@@ -179,12 +137,60 @@ function uncompress_image_file__uncompression_function() {
 }
 
 
-# Main function that should be called
+# Main uncompression function which should be called if a file needs to \
+# be uncompressed. This function calls two other functions, one of which \
+# checks if the file is compressed, the other performs the actual uncompression \
+# using the appropriate command.
+#
+# Function input  : /path/to/compressed/file
+# Function output : /absolute/path/to/image/file
+#
+function uncompress_image_file() {
+
+	# Variable to store absolute path of compressed file
+	local compressedFile
+
+	# If number of arguments = 1
+	if [[ $# -eq 1 ]] ; then
+		# If the file is non-zero in size, and is readable by the \
+		# user that the script is running as
+		if [[ -s "$1" && -r "$1" ]] ; then
+			# Call the function that checks if the input file is compressed,
+			# and add the output to the 'compressedFile' variable
+			compressedFile="$(uncompress_image_file__compression_check "$1")"
+
+			# If the 'compressedFile' variable has been set and is not an empty string
+			if [[ -v compressedFile && -n "${compressedFile}" ]] ; then
+
+				# Calling function that picks the appropriate command to uncompress/extract
+				# the compressed file based on the compression/archive type
+				################# Uncompression Function #####################
+				uncompress_image_file__uncompression_function "${compressedFile}" \
+					|| print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+					"Error returned by the 'uncompression_function' module."
+			
+			fi
+    # If the file doesn't exist, or is of size zero, or is unreadable by the user which
+    # the script is running as
+		else
+      print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+			"File \"$1\" either does not exist, is of zero-size, or is unreadable by the user \"${USER}\"."
+		fi
+	# If number of arguments is not equal to 1
+	else
+		print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s "Received $# arguments. Requires only 1."
+	fi
+
+}
+
+
+# Main initialisation function that should be called
 function uncompress_image_file__main() {
 	# Local array for storing paths to file that are to \
 	# be imported
 	local -a importFiles
-	importFiles=( "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh" )
+	importFiles=( "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh" \
+								"/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/check_image_file.sh" )
 
 	# Importing the 'general_functions.sh' script first
 	source "/Users/harshavardhanj/GitRepos/bash_scripts/usb_flash/general_functions.sh"
