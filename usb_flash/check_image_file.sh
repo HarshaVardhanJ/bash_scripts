@@ -51,8 +51,9 @@ function check_image_file__file_signature_check_method() {
     # file -b -L /path/to/file
     "${signatureCheckCommand[@]}" "$1"
   else
-    print_err -e 1 -s "Expecting one file as argument. Use either relative \
-      or absolute path"
+    print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+    "Expecting one file as argument. Use either relative or absolute path." \
+    && exit 1
   fi
 
 }
@@ -112,12 +113,13 @@ function check_image_file__file_signature_match_check() {
     # If the file doesn't exist, or is of size zero, or is unreadable by the user which
     # the script is running as
     else
-      print_err -e 1 -s "File \"$1\" either does not exist, is of zero-size,\
-        or is unreadable by the user \"$(whoami)\"."
+      print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+      "File \"$1\" either does not exist, is of zero-size, or is unreadable by the user \"${USER}\"."
     fi  
   # If number of arguments is not equal to 1
   else
-    print_err -e 1 -s "$# arguments have been provided. Requires only 1."
+    print_err -f "${FUNCNAME}" -l "${LINENO}" -e 1 -s \
+    "$# arguments have been provided. Requires only 1."
   fi
 
 }
@@ -135,12 +137,11 @@ function check_image_file__main() {
 
   # Calling the 'import_files' function which helps import scripts and prevent recursive \
   # importing
-  import_file "${importFiles[@]}"
+  import_files "${importFiles[@]}"
 }
 
 # Calling the main function
 check_image_file__main
-
 
 # This file isn't meant to be executed. It is preferable to unset the 'execute' bit on this file.
 # To solve the issue of circular dependencies, it is better to unset the execute bit on all scripts \
